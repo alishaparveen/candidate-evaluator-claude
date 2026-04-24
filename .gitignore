@@ -10,3 +10,4 @@ out/
 dist/
 tmp/
 coverage/
+*.tsbuildinfo
