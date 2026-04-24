@@ -1,0 +1,30 @@
+{
+  "name": "candidate-evaluator",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "get-token": "tsx --env-file=.env scripts/get-refresh-token.ts",
+    "test:eval": "tsx --env-file=.env scripts/test-evaluate.ts",
+    "test:poll": "tsx --env-file=.env scripts/test-poll.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "googleapis": "^144.0.0",
+    "html-to-text": "^9.0.5",
+    "next": "^16.2.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@types/html-to-text": "^9.0.4",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
