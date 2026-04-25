@@ -10,6 +10,7 @@ export default function Home() {
         The agent polls Gmail every minute, evaluates, and replies in the same thread.
       </p>
       <ul>
+        <li>Dashboard: <code>/dashboard?token=$CRON_SECRET</code></li>
         <li>Health: <a href="/api/health">/api/health</a></li>
         <li>Manual trigger: <code>POST /api/cron/poll</code> with <code>Authorization: Bearer $CRON_SECRET</code></li>
       </ul>

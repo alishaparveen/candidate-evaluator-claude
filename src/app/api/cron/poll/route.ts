@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { labelMessage, listPendingMessageIds } from '@/lib/gmail';
 import { processMessage } from '@/lib/processor';
+import { saveEvaluation } from '@/lib/store';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -42,6 +43,21 @@ async function handle(req: NextRequest) {
         console.error('[cron] failed to process', id, err);
         try {
           await labelMessage(id, 'error', true);
+        } catch {
+          // best-effort
+        }
+        try {
+          await saveEvaluation({
+            messageId: id,
+            threadId: id,
+            candidateEmail: 'unknown',
+            candidateName: null,
+            subject: '(failed before parse)',
+            receivedAt: new Date().toISOString(),
+            processedAt: new Date().toISOString(),
+            action: 'error',
+            errorMessage: msg,
+          });
         } catch {
           // best-effort
         }
