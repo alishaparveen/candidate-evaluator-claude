@@ -42,10 +42,11 @@ export default async function Dashboard({ searchParams }: Props) {
       </header>
 
       <section style={S.statsRow}>
-        <Stat label='Total processed' value={String(stats.total)} />
+        <Stat label='Total' value={String(stats.total)} />
         <Stat label='Evaluated' value={String(stats.byAction.evaluated)} />
         <Stat label='Asked for info' value={String(stats.byAction.requested_info)} />
         <Stat label='Skipped' value={String(stats.byAction.skipped)} />
+        <Stat label='Spam-filtered' value={String(stats.byAction.spam_filtered)} />
         <Stat label='Errors' value={String(stats.byAction.error)} accent={stats.byAction.error > 0 ? '#e00' : undefined} />
         <Stat
           label='Pass rate'
@@ -102,7 +103,9 @@ function Row({ e }: { e: StoredEvaluation }) {
             ? '#36b'
             : action === 'error'
               ? '#c00'
-              : '#666',
+              : action === 'spam_filtered'
+                ? '#999'
+                : '#666',
   };
   const dim = e.scores
     ? Object.entries(e.scores)
@@ -114,9 +117,11 @@ function Row({ e }: { e: StoredEvaluation }) {
       ? `${e.decision === 'pass' ? 'PASS' : 'FAIL'} — ${e.summary || ''}`
       : e.action === 'requested_info'
         ? `Asked for: ${(e.missing || []).join(', ')}`
-        : e.action === 'skipped'
-          ? `Skipped — ${e.reason || ''}`
-          : `Error — ${e.errorMessage || ''}`;
+        : e.action === 'spam_filtered'
+          ? `Filtered — ${e.reason || ''}`
+          : e.action === 'skipped'
+            ? `Skipped — ${e.reason || ''}`
+            : `Error — ${e.errorMessage || ''}`;
   return (
     <tr style={S.tr}>
       <td style={S.td} title={e.processedAt}>{relTime(e.processedAt)}</td>
@@ -205,7 +210,7 @@ const S: Record<string, React.CSSProperties> = {
   h1: { fontSize: 24, margin: 0 },
   muted: { color: '#888', fontSize: 13, margin: '4px 0 0 0' },
   refresh: { textDecoration: 'none', background: '#111', color: '#fff', padding: '8px 14px', borderRadius: 6, fontSize: 13 },
-  statsRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 12, marginBottom: 20 },
+  statsRow: { display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 12, marginBottom: 20 },
   statBox: { background: '#fafafa', border: '1px solid #eee', borderRadius: 8, padding: 14 },
   statValue: { fontSize: 22, fontWeight: 600, marginTop: 4 },
   empty: { padding: '4rem 2rem', textAlign: 'center', color: '#888', background: '#fafafa', borderRadius: 8 },

@@ -11,21 +11,60 @@ import {
   findMissingFields,
   gatherSignals,
   isAutomatedSender,
+  isBulkOrAutomated,
   isLikelyApplication,
+  passesAllowedTo,
   writeEmail,
 } from './evaluator';
-import { saveEvaluation, type StoredAction, type StoredEvaluation } from './store';
+import {
+  markRepliedToSender,
+  recentlyRepliedToSender,
+  saveEvaluation,
+  type StoredAction,
+  type StoredEvaluation,
+} from './store';
 import type { CandidateApplication, Evaluation, MissingField, ProcessResult } from '@/types';
 
 export async function processMessage(messageId: string): Promise<ProcessResult> {
   const app = await fetchApplicationFromMessage(messageId);
 
+  // Layer 1a — RFC bulk-mail headers (List-Unsubscribe, Precedence, Auto-Submitted).
+  // Catches Apollo/Streak/etc. that politely advertise they're marketing.
+  const bulk = isBulkOrAutomated(app);
+  if (bulk.spam) {
+    await markReadOnly(messageId).catch(() => {});
+    await labelMessage(messageId, 'spam-filtered', true).catch(() => {});
+    await persist(app, 'spam_filtered', null, { reason: bulk.reason });
+    return { action: 'skipped', reason: bulk.reason || 'bulk mail' };
+  }
+
+  // Layer 1b — Sender-address heuristics for senders that don't bother with headers.
   const auto = isAutomatedSender(app.from, app.subject);
   if (auto.skip) {
     await markReadOnly(messageId).catch(() => {});
-    await labelMessage(messageId, 'skipped', true).catch(() => {});
-    await persist(app, 'skipped', null, { reason: auto.reason });
+    await labelMessage(messageId, 'spam-filtered', true).catch(() => {});
+    await persist(app, 'spam_filtered', null, { reason: auto.reason });
     return { action: 'skipped', reason: auto.reason || 'automated' };
+  }
+
+  // Demo-mode allowlist: when EVALUATOR_ALLOWED_TO is set, only process mail
+  // addressed to that specific address (e.g. apply@yourdomain.com).
+  const toCheck = passesAllowedTo(app);
+  if (!toCheck.allowed) {
+    await markReadOnly(messageId).catch(() => {});
+    await labelMessage(messageId, 'skipped', true).catch(() => {});
+    await persist(app, 'skipped', null, { reason: toCheck.reason });
+    return { action: 'skipped', reason: toCheck.reason || 'not in demo allowlist' };
+  }
+
+  // Sender-level dedup. Don't reply to the same human twice within 24h —
+  // protects both the candidate (one decision per submission) and us
+  // (don't bombard a marketing list that snuck past Layer 1).
+  const lastReplied = await recentlyRepliedToSender(app.from).catch(() => null);
+  if (lastReplied) {
+    await labelMessage(messageId, 'skipped', true).catch(() => {});
+    await persist(app, 'skipped', null, { reason: `already replied to ${app.from} at ${lastReplied}` });
+    return { action: 'skipped', reason: `already replied to ${app.from} within last 24h` };
   }
 
   const extracted = await extractApplication(app);
@@ -62,6 +101,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
       inReplyTo: msgIdHeader,
     });
     await labelMessage(messageId, 'needs-info', true);
+    await markRepliedToSender(app.from).catch(() => {});
     await persist(app, 'requested_info', extracted.candidateName, { missing });
     return {
       action: 'requested_info',
@@ -89,6 +129,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     inReplyTo: msgIdHeader,
   });
   await labelMessage(messageId, 'evaluated', true);
+  await markRepliedToSender(app.from).catch(() => {});
   await persist(app, 'evaluated', extracted.candidateName, { evaluation });
 
   console.log('[evaluator] decision', {

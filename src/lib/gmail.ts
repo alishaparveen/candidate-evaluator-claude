@@ -57,11 +57,12 @@ export async function listPendingMessageIds(limit = 10): Promise<string[]> {
   const errored = labelName('error');
   const skipped = labelName('skipped');
   const needsInfo = labelName('needs-info');
+  const spamFiltered = labelName('spam-filtered');
   // We do NOT key on `is:unread`. A human glancing at the inbox should not
   // break the agent. Source of truth for "already handled" is the labels we
   // applied. Bound by `newer_than:7d` so the agent doesn't re-discover the
   // entire inbox history on first deploy.
-  const q = `in:inbox -from:me newer_than:7d -label:${evaluated} -label:${errored} -label:${skipped} -label:${needsInfo}`;
+  const q = `in:inbox -from:me newer_than:7d -label:${evaluated} -label:${errored} -label:${skipped} -label:${needsInfo} -label:${spamFiltered}`;
   const res = await gmail.users.messages.list({ userId: 'me', q, maxResults: limit });
   return (res.data.messages || []).map((m) => m.id!).filter(Boolean);
 }
@@ -99,8 +100,12 @@ export async function fetchApplicationFromMessage(messageId: string): Promise<Ca
   const first = messages[0];
   const firstHeaders = first?.payload?.headers || [];
   const fromRaw = getHeader(firstHeaders, 'From');
+  const toRaw = getHeader(firstHeaders, 'To');
   const subject = getHeader(firstHeaders, 'Subject');
   const dateStr = getHeader(firstHeaders, 'Date');
+  const listUnsubscribe = getHeader(firstHeaders, 'List-Unsubscribe');
+  const precedence = getHeader(firstHeaders, 'Precedence');
+  const autoSubmitted = getHeader(firstHeaders, 'Auto-Submitted');
   const fromMatch = fromRaw.match(/^\s*(?:"?([^"<]*)"?\s*)?<?([^<>\s]+@[^<>\s]+)>?/);
   const fromName = fromMatch?.[1]?.trim() || '';
   const fromEmail = (fromMatch?.[2] || fromRaw).trim();
@@ -152,6 +157,10 @@ export async function fetchApplicationFromMessage(messageId: string): Promise<Ca
     threadId,
     from: fromEmail,
     fromName,
+    to: toRaw,
+    listUnsubscribe: listUnsubscribe || undefined,
+    precedence: precedence || undefined,
+    autoSubmitted: autoSubmitted || undefined,
     subject,
     body: bodyParts.join('\n\n---\n\n'),
     receivedAt: dateStr,

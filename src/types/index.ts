@@ -3,10 +3,15 @@ export type CandidateApplication = {
   threadId: string;
   from: string;
   fromName: string;
+  to: string; // raw "To:" header — used for demo-mode allowlist
   subject: string;
   body: string;
   receivedAt: string;
   attachments: EmailAttachment[];
+  // Bulk-mail signals from RFC headers — populated for Layer 1 filtering.
+  listUnsubscribe?: string;
+  precedence?: string;
+  autoSubmitted?: string;
 };
 
 export type EmailAttachment = {

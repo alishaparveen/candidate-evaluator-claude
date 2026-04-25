@@ -35,7 +35,7 @@ export function isStoreConfigured(): boolean {
 const RECENT_LIST_KEY = 'evals:recent';
 const RECENT_LIST_CAP = 200;
 
-export type StoredAction = 'evaluated' | 'requested_info' | 'skipped' | 'error';
+export type StoredAction = 'evaluated' | 'requested_info' | 'skipped' | 'spam_filtered' | 'error';
 
 export type StoredEvaluation = {
   messageId: string;
@@ -91,6 +91,28 @@ export async function getRecentEvaluations(limit = 50): Promise<StoredEvaluation
   return records.filter((r): r is StoredEvaluation => r !== null);
 }
 
+/**
+ * Sender-level dedup. The cron will skip processing a message from a sender
+ * we've already replied to within the last `ttlHours` (default 24). Prevents
+ * the agent from spamming a marketing list that sends a fresh email every day,
+ * and keeps a real candidate from getting two pass/fail emails if they
+ * resubmit before we follow up. Keyed by lowercase email address.
+ */
+const REPLIED_KEY = (email: string) => `replied:${email.toLowerCase().trim()}`;
+
+export async function markRepliedToSender(email: string, ttlSeconds = 86_400): Promise<void> {
+  if (!isStoreConfigured()) return;
+  const redis = getRedis();
+  await redis.set(REPLIED_KEY(email), new Date().toISOString(), { ex: ttlSeconds });
+}
+
+export async function recentlyRepliedToSender(email: string): Promise<string | null> {
+  if (!isStoreConfigured()) return null;
+  const redis = getRedis();
+  const v = await redis.get<string>(REPLIED_KEY(email));
+  return typeof v === 'string' ? v : null;
+}
+
 export async function getStats(): Promise<{
   total: number;
   byAction: Record<StoredAction, number>;
@@ -102,6 +124,7 @@ export async function getStats(): Promise<{
     evaluated: 0,
     requested_info: 0,
     skipped: 0,
+    spam_filtered: 0,
     error: 0,
   };
   let passes = 0;

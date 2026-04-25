@@ -55,7 +55,7 @@ async function main() {
     process.exit(1);
   }
 
-  const labels = ['evaluated', 'needs-info', 'skipped', 'error'].map(labelName);
+  const labels = ['evaluated', 'needs-info', 'skipped', 'spam-filtered', 'error'].map(labelName);
   console.log(`Backfilling up to ${MAX_PER_LABEL} per label: ${labels.join(', ')}\n`);
 
   let totalWritten = 0;
@@ -66,7 +66,7 @@ async function main() {
       try {
         const app = await fetchApplicationFromMessage(id);
 
-        if (lbl.endsWith('/skipped')) {
+        if (lbl.endsWith('/spam-filtered')) {
           const auto = isAutomatedSender(app.from, app.subject);
           await saveEvaluation({
             messageId: id,
@@ -76,8 +76,25 @@ async function main() {
             subject: app.subject,
             receivedAt: app.receivedAt,
             processedAt: new Date().toISOString(),
+            action: 'spam_filtered',
+            reason: auto.reason || 'bulk/marketing mail (backfill)',
+          });
+          process.stdout.write('m');
+          totalWritten++;
+          continue;
+        }
+
+        if (lbl.endsWith('/skipped')) {
+          await saveEvaluation({
+            messageId: id,
+            threadId: app.threadId,
+            candidateEmail: app.from,
+            candidateName: null,
+            subject: app.subject,
+            receivedAt: app.receivedAt,
+            processedAt: new Date().toISOString(),
             action: 'skipped',
-            reason: auto.reason || 'no application signal (backfill)',
+            reason: 'no application signal (backfill)',
           });
           process.stdout.write('s');
           totalWritten++;

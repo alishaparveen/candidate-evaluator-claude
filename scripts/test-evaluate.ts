@@ -41,6 +41,7 @@ async function main() {
     threadId: 'test-thread',
     from: 'test@example.com',
     fromName: 'Test Candidate',
+    to: process.env.EVALUATOR_FROM_EMAIL || 'jobs@example.com',
     subject: 'Application for Resident role',
     body,
     receivedAt: new Date().toISOString(),

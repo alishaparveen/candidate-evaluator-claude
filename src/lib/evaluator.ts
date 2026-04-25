@@ -20,19 +20,56 @@ import type {
 const MAX_RESUME_TEXT_FOR_EVAL = 15_000;
 const MAX_PORTFOLIO_TEXT_FOR_EVAL = 8_000;
 
+/**
+ * Layer 1 — RFC bulk-mail headers. Marketing / transactional / auto-reply mail
+ * advertises itself with these headers; checking them is free, deterministic,
+ * and kills the vast majority of false positives before we hit the LLM.
+ *
+ * Returns spam=true when the message is bulk/automated and SHOULD NOT be
+ * replied to. Caller should label `evaluator/spam-filtered` and move on.
+ */
+export function isBulkOrAutomated(app: CandidateApplication): { spam: boolean; reason?: string } {
+  if (app.listUnsubscribe) {
+    return { spam: true, reason: 'List-Unsubscribe header present (bulk mail)' };
+  }
+  if (app.precedence && /bulk|junk|list/i.test(app.precedence)) {
+    return { spam: true, reason: `Precedence: ${app.precedence}` };
+  }
+  if (app.autoSubmitted && app.autoSubmitted.toLowerCase() !== 'no') {
+    return { spam: true, reason: `Auto-Submitted: ${app.autoSubmitted}` };
+  }
+  return { spam: false };
+}
+
+/**
+ * Layer 1.5 — sender-address heuristics for senders that don't bother with
+ * RFC bulk headers (small mailers, corporate "team@" replies, bounce dorks).
+ * Kept narrow to avoid false-positives on legit candidates.
+ */
 export function isAutomatedSender(email: string, subject: string): { skip: boolean; reason?: string } {
   const e = email.toLowerCase();
-  if (/^(no-?reply|noreply|mailer-daemon|postmaster|bounce|bounces|do[-_]?not[-_]?reply|info|hello|hi|news|newsletter|notifications?|alerts?|updates?|team|support|marketing|hr|recruiting|onboarding|welcome|notify|admin|account|billing|sales|contact|community|help|service|do-not-reply)@/.test(e)) {
+  if (/^(no-?reply|noreply|mailer-daemon|postmaster|bounce|bounces|do[-_]?not[-_]?reply|notifications?|alerts?|do-not-reply)@/.test(e)) {
     return { skip: true, reason: 'role / automated sender address' };
-  }
-  if (/@(mail\.|email\.|news\.|newsletter\.|noreply\.|notifications?\.|info\.|hello\.|marketing\.|alerts?\.|updates?\.|notify\.)/.test(e)) {
-    return { skip: true, reason: 'transactional/marketing sender domain' };
   }
   const s = subject.toLowerCase();
   if (/out of office|auto[- ]?reply|delivery (status|failure)|undeliverable|automatic reply/i.test(s)) {
     return { skip: true, reason: 'automated subject' };
   }
   return { skip: false };
+}
+
+/**
+ * Demo-mode allowlist. If EVALUATOR_ALLOWED_TO is set, only mail addressed
+ * to that address (in the To: header) is processed. Useful for live demos
+ * where you want to constrain the agent to a dedicated `apply@` address
+ * while a shared inbox keeps receiving everything else.
+ */
+export function passesAllowedTo(app: CandidateApplication): { allowed: boolean; reason?: string } {
+  const allow = (process.env.EVALUATOR_ALLOWED_TO || '').toLowerCase().trim();
+  if (!allow) return { allowed: true };
+  const to = (app.to || '').toLowerCase();
+  if (to.includes(allow)) return { allowed: true };
+  return { allowed: false, reason: `To: header does not match EVALUATOR_ALLOWED_TO=${allow}` };
 }
 
 /**

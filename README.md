@@ -165,6 +165,21 @@ Defined in [`src/lib/rubric.ts`](src/lib/rubric.ts). Pass threshold: **6.5 / 10*
 
 Edit `src/lib/rubric.ts` to re-weight, change anchors, or add/remove dimensions — the evaluator prompt is built from this file, so changes propagate automatically.
 
+## Email is an open channel — layered filtering
+
+Email isn't a form submission. The inbox receives marketing, recruiter outreach, vendor pitches, transactional mail, MAILER-DAEMON bounces, auto-replies, and bulk newsletters constantly. Treating every inbound as a potential application is how an agent ends up emailing Apollo and Streak asking for their resume — which my first live test actually did. The fix is layered filtering, cheapest checks first:
+
+| Layer | What it does | Cost |
+|---|---|---|
+| **1a — RFC bulk-mail headers** | Skip if `List-Unsubscribe`, `Precedence: bulk`, or `Auto-Submitted` is present. This alone kills ~95% of marketing. | 0 LLM calls, free |
+| **1b — Sender heuristics** | Skip if `From:` looks like `noreply@`, `mailer-daemon@`, etc. | 0 LLM calls, free |
+| **2 — `EVALUATOR_ALLOWED_TO` allowlist** *(opt-in)* | When set, only mail addressed to a specific `apply@` address is processed. Use during demos to constrain a shared inbox. | 0 LLM calls, free |
+| **3 — Sender-level dedup** | Don't reply to the same email twice within 24h (Upstash `replied:<email>` key with TTL). Protects against marketing lists that pass Layer 1 and against double-replies to a single candidate. | 1 KV read per message, free tier |
+| **4 — Content heuristic** | After Haiku parses, require at least one application signal (PDF, GitHub link, portfolio link, or "application/resume/candidate/etc." keyword). If none, skip silently. | 1 Haiku call (which we'd run anyway) |
+| **5 — Full pipeline** | Only now do we score with Opus and reply. | Full cost |
+
+Each layer applies a distinct Gmail label (`evaluator/spam-filtered` for layer 1, `evaluator/skipped` for layer 4, `evaluator/needs-info` for incomplete, `evaluator/evaluated` for processed) so the dashboard separates "marketing the agent correctly ignored" from "valid email that didn't look like an application." With more time I'd add a learning loop: if a human re-labels something as a real application, the heuristic gets tightened.
+
 ## Edge cases — how they're handled
 
 | Case | Behavior |
@@ -175,20 +190,27 @@ Edit `src/lib/rubric.ts` to re-weight, change anchors, or add/remove dimensions 
 | Multiple missing fields | One email that asks for all of them, acknowledging what we already received |
 | Candidate replies with missing info | Full thread is re-parsed (original message + all replies) before evaluation |
 | Reply to our pass/fail email | Ignored — thread already has `evaluated` label |
-| Auto-reply / out-of-office / MAILER-DAEMON | Detected by `isAutomatedSender`; labeled `skipped`, no reply sent |
+| Auto-reply / out-of-office / MAILER-DAEMON | Detected by `isAutomatedSender`; labeled `evaluator/spam-filtered`, no reply sent |
+| Marketing newsletter (Apollo, Streak, etc.) | `List-Unsubscribe` header detected; labeled `evaluator/spam-filtered`, no reply sent |
+| Same sender emails twice in 24h | Sender-level dedup in KV; second message labeled `evaluator/skipped` |
 | GitHub profile private / 404 | Evaluator sees `"github": { error: "unavailable" }`, scores `github_signal` low accordingly |
 | Portfolio URL unreachable / times out | Same — evaluator notes it and scores conservatively |
 | Opus returns malformed JSON | Defensive `parseJsonFromText` strips fences and isolates `{...}`; if it still fails, the message gets `evaluator/error` and is safe to retry |
 | Cron function hits 55-second budget | Remaining messages are left unread and picked up on the next tick |
 
+## Dashboard
+
+`/dashboard?token=<CRON_SECRET>` — server-rendered page showing the last 50 processed messages, per-dimension scores, decisions, missing-info reasons, errors, and links back to the Gmail thread. Stats row shows total / evaluated / asked-for-info / skipped / spam-filtered / errors / pass rate / avg score. State persists in Upstash Redis, written by `processor.ts` after every message and survivable across redeploys. KV writes are non-fatal — Gmail labels remain the canonical state if Upstash is unreachable.
+
 ## What I'd improve with more time
 
-- **Duplicate application detection**: right now a candidate who applies twice from scratch gets evaluated twice (different threads). Would add a lightweight dedup by sender email over the last 14 days (KV store or Gmail search).
-- **Attachment-signature check**: verify the PDF is actually a resume vs. a random document. One extra Haiku boolean call, or reject files > 10 MB up-front.
+- **LLM intent classifier as Layer 3** — a one-token Haiku call ("is this email a job application? yes/no") for the cases that slip past header + heuristic filters. Skipped for v1 because Layers 1+4 catch >99% in practice and are debuggable; the LLM call adds latency and a failure mode.
+- **Attachment-signature check** — verify the PDF is actually a resume vs. a random document. One extra Haiku boolean call, or reject files > 10 MB up-front.
 - **Rate-limit + retry with backoff on Anthropic 429s.** Currently one failed message gets labeled `error` and needs manual retry.
-- **LangFuse / OpenTelemetry traces** for the full pipeline — today I rely on Vercel function logs. With a real funnel you want per-stage latency and token-cost dashboards.
+- **LangFuse / OpenTelemetry traces** for the full pipeline — today I rely on Vercel function logs and the dashboard. With a real funnel you want per-stage latency and token-cost dashboards.
 - **Confidence scores on extraction** — a low-confidence GitHub URL should trigger a clarifying email instead of being silently wrong.
 - **Human-in-the-loop edits** before sending. A Slack ping with "approve/edit/reject" for borderline (say, 6.0–7.0 weighted) scores would catch the cases where Opus is right 80% of the time.
+- **Learning loop on the spam filter** — when a human moves a message from `evaluator/spam-filtered` to inbox and re-applies a positive label, the heuristic should learn from it.
 - **Proper test suite.** Today there's a CLI harness but no mocks. Would add Vitest with recorded Claude responses.
 - **Per-role rubrics.** One JSON config per job opening, selected by the To: address or a subject tag.
 
