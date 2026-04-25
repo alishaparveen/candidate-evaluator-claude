@@ -8,6 +8,10 @@ An email-based AI agent that screens job applications end-to-end:
 
 Built for the Plum Residency take-home.
 
+**Live:** https://candidate-evaluator-oxiyc8bwq-alisha02012001-1865s-projects.vercel.app
+**Email the agent at:** `goldenpointpickleballclub@gmail.com`
+**Health:** [/api/health](https://candidate-evaluator-oxiyc8bwq-alisha02012001-1865s-projects.vercel.app/api/health)
+
 ## Architecture (one paragraph)
 
 **Inbound email** lives in Gmail. A Vercel Cron triggers `/api/cron/poll` every minute; the endpoint calls the Gmail API for `is:unread in:inbox -label:evaluator/evaluated -label:evaluator/error -from:me` and processes up to `MAX_PER_TICK` (default 3) applications per invocation under a 55-second function budget. Each message is pulled *with full thread context* (so a candidate replying to our "please send your GitHub" email is evaluated against the original application plus the reply). **Parsing** is a single Haiku 4.5 call that takes the email body plus the PDF attachment (Claude's native document support — no `pdf-parse`) and returns structured JSON. If required fields are missing, Haiku also drafts a friendly follow-up. If the application is complete, we fan out in parallel to the **GitHub REST API** (profile + 30 most recent owned repos) and the **portfolio URL** (fetch + `html-to-text`). All three signals go to **Opus 4.7**, which scores the candidate across a 5-dimension weighted rubric (defined in [`src/lib/rubric.ts`](src/lib/rubric.ts)) and returns JSON with per-dimension scores + reasoning, a decision, strengths, concerns, and next steps. Haiku then drafts the reply email; Gmail sends it in-thread; we label the message `evaluator/evaluated` so it won't be re-processed. **State lives in Gmail labels** — no database.
