@@ -56,7 +56,12 @@ export async function listPendingMessageIds(limit = 10): Promise<string[]> {
   const evaluated = labelName('evaluated');
   const errored = labelName('error');
   const skipped = labelName('skipped');
-  const q = `is:unread in:inbox -from:me -label:${evaluated} -label:${errored} -label:${skipped}`;
+  const needsInfo = labelName('needs-info');
+  // We do NOT key on `is:unread`. A human glancing at the inbox should not
+  // break the agent. Source of truth for "already handled" is the labels we
+  // applied. Bound by `newer_than:7d` so the agent doesn't re-discover the
+  // entire inbox history on first deploy.
+  const q = `in:inbox -from:me newer_than:7d -label:${evaluated} -label:${errored} -label:${skipped} -label:${needsInfo}`;
   const res = await gmail.users.messages.list({ userId: 'me', q, maxResults: limit });
   return (res.data.messages || []).map((m) => m.id!).filter(Boolean);
 }
