@@ -22,14 +22,35 @@ const MAX_PORTFOLIO_TEXT_FOR_EVAL = 8_000;
 
 export function isAutomatedSender(email: string, subject: string): { skip: boolean; reason?: string } {
   const e = email.toLowerCase();
-  if (/^(no-?reply|noreply|mailer-daemon|postmaster|bounce|bounces|do[-_]?not[-_]?reply)@/.test(e)) {
-    return { skip: true, reason: 'automated sender address' };
+  if (/^(no-?reply|noreply|mailer-daemon|postmaster|bounce|bounces|do[-_]?not[-_]?reply|info|hello|hi|news|newsletter|notifications?|alerts?|updates?|team|support|marketing|hr|recruiting|onboarding|welcome|notify|admin|account|billing|sales|contact|community|help|service|do-not-reply)@/.test(e)) {
+    return { skip: true, reason: 'role / automated sender address' };
+  }
+  if (/@(mail\.|email\.|news\.|newsletter\.|noreply\.|notifications?\.|info\.|hello\.|marketing\.|alerts?\.|updates?\.|notify\.)/.test(e)) {
+    return { skip: true, reason: 'transactional/marketing sender domain' };
   }
   const s = subject.toLowerCase();
   if (/out of office|auto[- ]?reply|delivery (status|failure)|undeliverable|automatic reply/i.test(s)) {
     return { skip: true, reason: 'automated subject' };
   }
   return { skip: false };
+}
+
+/**
+ * After parsing, decide whether the email actually looks like a job application.
+ * Filters out newsletters, transactional mail, and random inbound that happens
+ * to land in the inbox. We err on the side of responding when there is ANY
+ * candidate-like signal (a PDF, a GitHub link, a portfolio URL, or application
+ * keywords in the body).
+ */
+export function isLikelyApplication(extracted: ExtractedApplication, app: CandidateApplication): boolean {
+  if (extracted.hasResume) return true;
+  if (extracted.githubUsername) return true;
+  if (extracted.portfolioUrl) return true;
+  const text = `${app.subject}\n${app.body}`.toLowerCase();
+  if (/\b(applic(ation|ant|ying)|apply\b|resume|cv|candidate|portfolio|github|linkedin|hiring|job opening|position|interview|role at|engineer|developer)\b/i.test(text)) {
+    return true;
+  }
+  return false;
 }
 
 export async function extractApplication(app: CandidateApplication): Promise<ExtractedApplication> {

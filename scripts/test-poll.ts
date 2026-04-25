@@ -6,6 +6,7 @@
  *
  * Requires a fully filled .env (ANTHROPIC_API_KEY + all GOOGLE_* + EVALUATOR_FROM_EMAIL).
  */
+import './_load-env';
 import { listPendingMessageIds } from '../src/lib/gmail';
 import { processMessage } from '../src/lib/processor';
 

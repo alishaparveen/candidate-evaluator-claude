@@ -8,6 +8,7 @@
  *
  * Requires: ANTHROPIC_API_KEY (+ optionally GITHUB_TOKEN) in .env.
  */
+import './_load-env';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {

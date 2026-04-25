@@ -11,6 +11,7 @@ import {
   findMissingFields,
   gatherSignals,
   isAutomatedSender,
+  isLikelyApplication,
   writeEmail,
 } from './evaluator';
 import type { ProcessResult } from '@/types';
@@ -26,6 +27,12 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
   }
 
   const extracted = await extractApplication(app);
+
+  if (!isLikelyApplication(extracted, app)) {
+    await labelMessage(messageId, 'skipped', true).catch(() => {});
+    return { action: 'skipped', reason: 'no application signal (no resume/github/portfolio/keywords)' };
+  }
+
   const missing = findMissingFields(extracted);
   const msgIdHeader = await fetchMessageIdHeader(messageId).catch(() => '');
 
