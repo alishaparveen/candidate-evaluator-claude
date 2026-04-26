@@ -56,14 +56,17 @@ export async function listPendingMessageIds(limit = 10): Promise<string[]> {
   const evaluated = labelName('evaluated');
   const errored = labelName('error');
   const skipped = labelName('skipped');
-  const needsInfo = labelName('needs-info');
   const spamFiltered = labelName('spam-filtered');
-  // We do NOT key on `is:unread`. A human glancing at the inbox should not
-  // break the agent. Source of truth for "already handled" is the labels we
-  // applied. Bound by `newer_than:7d` so the agent doesn't re-discover the
-  // entire inbox history on first deploy.
-  const q = `in:inbox -from:me newer_than:7d -label:${evaluated} -label:${errored} -label:${skipped} -label:${needsInfo} -label:${spamFiltered}`;
-  const res = await gmail.users.messages.list({ userId: 'me', q, maxResults: limit });
+  // Source of truth for "already handled" is per-message KV state, NOT this
+  // query. We exclude THREADS that reached a terminal state (evaluated /
+  // error / spam-filtered / explicitly skipped) but DO include threads in
+  // `needs-info` — that's how we pick up the candidate replying with the
+  // resume / GitHub link we asked for. The processor uses
+  // wasMessageProcessed() to dedupe individual messages so we never
+  // re-process the same message ID. Bound by newer_than:7d so the agent
+  // doesn't re-discover the entire inbox history on first deploy.
+  const q = `in:inbox -from:me newer_than:7d -label:${evaluated} -label:${errored} -label:${skipped} -label:${spamFiltered}`;
+  const res = await gmail.users.messages.list({ userId: 'me', q, maxResults: limit * 3 });
   return (res.data.messages || []).map((m) => m.id!).filter(Boolean);
 }
 

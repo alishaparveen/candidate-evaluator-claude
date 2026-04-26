@@ -94,9 +94,13 @@ export async function getRecentEvaluations(limit = 50): Promise<StoredEvaluation
 /**
  * Sender-level dedup. The cron will skip processing a message from a sender
  * we've already replied to within the last `ttlHours` (default 24). Prevents
- * the agent from spamming a marketing list that sends a fresh email every day,
- * and keeps a real candidate from getting two pass/fail emails if they
- * resubmit before we follow up. Keyed by lowercase email address.
+ * the agent from spamming a marketing list that sends a fresh email every day.
+ *
+ * IMPORTANT: this dedup is bypassed when the new message arrives in a thread
+ * we've already engaged with (see wasThreadEngaged). A candidate replying to
+ * our "please send your GitHub" ask shows up under the same sender address,
+ * but is the EXPECTED next step in a conversation we started — not a
+ * duplicate application.
  */
 const REPLIED_KEY = (email: string) => `replied:${email.toLowerCase().trim()}`;
 
@@ -111,6 +115,53 @@ export async function recentlyRepliedToSender(email: string): Promise<string | n
   const redis = getRedis();
   const v = await redis.get<string>(REPLIED_KEY(email));
   return typeof v === 'string' ? v : null;
+}
+
+/**
+ * Per-thread engagement tracking. When we send any reply (needs-info,
+ * pass, fail, more-info), we mark the thread as engaged. Subsequent messages
+ * in the same thread are continuations of an active conversation we started,
+ * so the sender-level dedup should NOT block them.
+ *
+ * 30-day TTL — long enough that a candidate following up two weeks later
+ * doesn't get a fresh "you already applied" treatment.
+ */
+const ENGAGED_THREAD_KEY = (threadId: string) => `engaged:thread:${threadId}`;
+
+export async function markThreadEngaged(threadId: string, ttlSeconds = 30 * 86_400): Promise<void> {
+  if (!isStoreConfigured()) return;
+  const redis = getRedis();
+  await redis.set(ENGAGED_THREAD_KEY(threadId), new Date().toISOString(), { ex: ttlSeconds });
+}
+
+export async function wasThreadEngaged(threadId: string): Promise<boolean> {
+  if (!isStoreConfigured()) return false;
+  const redis = getRedis();
+  const v = await redis.get<string>(ENGAGED_THREAD_KEY(threadId));
+  return typeof v === 'string' && v.length > 0;
+}
+
+/**
+ * Per-message processed tracking. Belt-and-braces with Gmail labels: if the
+ * Gmail search query lets a previously-processed message slip through (e.g.
+ * because we relaxed it to allow candidate replies in `needs-info` threads),
+ * KV catches the duplicate before we re-process.
+ *
+ * 14-day TTL — well past the `newer_than:7d` polling window.
+ */
+const PROCESSED_MSG_KEY = (id: string) => `processed:msg:${id}`;
+
+export async function markMessageProcessed(messageId: string, ttlSeconds = 14 * 86_400): Promise<void> {
+  if (!isStoreConfigured()) return;
+  const redis = getRedis();
+  await redis.set(PROCESSED_MSG_KEY(messageId), new Date().toISOString(), { ex: ttlSeconds });
+}
+
+export async function wasMessageProcessed(messageId: string): Promise<boolean> {
+  if (!isStoreConfigured()) return false;
+  const redis = getRedis();
+  const v = await redis.get<string>(PROCESSED_MSG_KEY(messageId));
+  return typeof v === 'string' && v.length > 0;
 }
 
 export async function getStats(): Promise<{

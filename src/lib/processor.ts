@@ -20,15 +20,28 @@ import {
   writeEmail,
 } from './evaluator';
 import {
+  markMessageProcessed,
   markRepliedToSender,
+  markThreadEngaged,
   recentlyRepliedToSender,
   saveEvaluation,
+  wasMessageProcessed,
+  wasThreadEngaged,
   type StoredAction,
   type StoredEvaluation,
 } from './store';
 import type { CandidateApplication, Evaluation, MissingField, ProcessResult } from '@/types';
 
 export async function processMessage(messageId: string): Promise<ProcessResult> {
+  // Per-message KV dedup. Catches the case where the polling query returns
+  // a message we already labeled — happens when the broader query (now
+  // including `needs-info` threads so candidate replies come through) picks
+  // up the original message a second time before Gmail's index updates, or
+  // after a transient processing error.
+  if (await wasMessageProcessed(messageId).catch(() => false)) {
+    return { action: 'skipped', reason: `message ${messageId} already processed (KV)` };
+  }
+
   const app = await fetchApplicationFromMessage(messageId);
 
   // Layer 1a — RFC bulk-mail headers (List-Unsubscribe, Precedence, Auto-Submitted).
@@ -38,6 +51,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     await markReadOnly(messageId).catch(() => {});
     await labelMessage(messageId, 'spam-filtered', true).catch(() => {});
     await persist(app, 'spam_filtered', null, { reason: bulk.reason });
+    await markMessageProcessed(messageId).catch(() => {});
     return { action: 'skipped', reason: bulk.reason || 'bulk mail' };
   }
 
@@ -47,6 +61,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     await markReadOnly(messageId).catch(() => {});
     await labelMessage(messageId, 'spam-filtered', true).catch(() => {});
     await persist(app, 'spam_filtered', null, { reason: auto.reason });
+    await markMessageProcessed(messageId).catch(() => {});
     return { action: 'skipped', reason: auto.reason || 'automated' };
   }
 
@@ -57,6 +72,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     await markReadOnly(messageId).catch(() => {});
     await labelMessage(messageId, 'spam-filtered', true).catch(() => {});
     await persist(app, 'spam_filtered', null, { reason: recruiter.reason });
+    await markMessageProcessed(messageId).catch(() => {});
     return { action: 'skipped', reason: recruiter.reason || 'recruiter outreach' };
   }
 
@@ -67,17 +83,23 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     await markReadOnly(messageId).catch(() => {});
     await labelMessage(messageId, 'skipped', true).catch(() => {});
     await persist(app, 'skipped', null, { reason: toCheck.reason });
+    await markMessageProcessed(messageId).catch(() => {});
     return { action: 'skipped', reason: toCheck.reason || 'not in demo allowlist' };
   }
 
-  // Sender-level dedup. Don't reply to the same human twice within 24h —
-  // protects both the candidate (one decision per submission) and us
-  // (don't bombard a marketing list that snuck past Layer 1).
-  const lastReplied = await recentlyRepliedToSender(app.from).catch(() => null);
-  if (lastReplied) {
-    await labelMessage(messageId, 'skipped', true).catch(() => {});
-    await persist(app, 'skipped', null, { reason: `already replied to ${app.from} at ${lastReplied}` });
-    return { action: 'skipped', reason: `already replied to ${app.from} within last 24h` };
+  // Sender-level dedup, but ONLY when this is a fresh thread. If the new
+  // message is in a thread we already engaged with (we previously sent a
+  // needs-info ask in the same thread), the candidate is replying to OUR
+  // ask — process it normally so we evaluate the full thread context.
+  const isContinuation = await wasThreadEngaged(app.threadId).catch(() => false);
+  if (!isContinuation) {
+    const lastReplied = await recentlyRepliedToSender(app.from).catch(() => null);
+    if (lastReplied) {
+      await labelMessage(messageId, 'skipped', true).catch(() => {});
+      await persist(app, 'skipped', null, { reason: `already replied to ${app.from} at ${lastReplied}` });
+      await markMessageProcessed(messageId).catch(() => {});
+      return { action: 'skipped', reason: `already replied to ${app.from} within last 24h (different thread)` };
+    }
   }
 
   const extracted = await extractApplication(app);
@@ -87,6 +109,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     await persist(app, 'skipped', extracted.candidateName, {
       reason: 'no application signal (no resume/github/portfolio/keywords)',
     });
+    await markMessageProcessed(messageId).catch(() => {});
     return { action: 'skipped', reason: 'no application signal (no resume/github/portfolio/keywords)' };
   }
 
@@ -123,6 +146,8 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     });
     await labelMessage(messageId, 'needs-info', true);
     await markRepliedToSender(app.from).catch(() => {});
+    await markThreadEngaged(app.threadId).catch(() => {});
+    await markMessageProcessed(messageId).catch(() => {});
     await persist(app, 'requested_info', extracted.candidateName, { missing: askMissing });
     return {
       action: 'requested_info',
@@ -157,6 +182,8 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     });
     await labelMessage(messageId, 'needs-info', true);
     await markRepliedToSender(app.from).catch(() => {});
+    await markThreadEngaged(app.threadId).catch(() => {});
+    await markMessageProcessed(messageId).catch(() => {});
     await persist(app, 'requested_info', extracted.candidateName, { missing });
     return {
       action: 'requested_info',
@@ -194,6 +221,13 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     evaluation.decision === 'needs_more_info' ? 'needs-info' : 'evaluated';
   await labelMessage(messageId, finalLabel, true);
   await markRepliedToSender(app.from).catch(() => {});
+  // Engage the thread so candidate replies bypass sender dedup. Even for a
+  // final pass/fail decision we mark engagement — if the candidate replies
+  // with "thanks", we won't accidentally try to evaluate them again. The
+  // labelMessage above plus the polling-query exclusion of `evaluated`
+  // means this thread also won't appear in future polls anyway.
+  await markThreadEngaged(app.threadId).catch(() => {});
+  await markMessageProcessed(messageId).catch(() => {});
   if (evaluation.decision === 'needs_more_info') {
     await persist(app, 'requested_info', extracted.candidateName, {
       missing: [],

@@ -8,13 +8,15 @@ An email-based AI agent that screens job applications end-to-end:
 
 Built for the Plum Residency take-home.
 
-**Live:** https://candidate-evaluator-oxiyc8bwq-alisha02012001-1865s-projects.vercel.app
+**Live:** https://candidate-evaluator-alisha02012001-1865s-projects.vercel.app
 **Email the agent at:** `goldenpointpickleballclub@gmail.com`
-**Health:** [/api/health](https://candidate-evaluator-oxiyc8bwq-alisha02012001-1865s-projects.vercel.app/api/health)
+**Dashboard:** [/dashboard?token=...](https://candidate-evaluator-alisha02012001-1865s-projects.vercel.app/dashboard) (token is the `CRON_SECRET`)
+**Health:** [/api/health](https://candidate-evaluator-alisha02012001-1865s-projects.vercel.app/api/health)
+**Test pack score:** [26 / 26 PASS](#test-pack-results) on the Plum Builders adversarial fixtures.
 
 ## Architecture (one paragraph)
 
-**Inbound email** lives in Gmail. A Vercel Cron triggers `/api/cron/poll` every minute; the endpoint calls the Gmail API for `is:unread in:inbox -label:evaluator/evaluated -label:evaluator/error -from:me` and processes up to `MAX_PER_TICK` (default 3) applications per invocation under a 55-second function budget. Each message is pulled *with full thread context* (so a candidate replying to our "please send your GitHub" email is evaluated against the original application plus the reply). **Parsing** is a single Haiku 4.5 call that takes the email body plus the PDF attachment (Claude's native document support — no `pdf-parse`) and returns structured JSON. If required fields are missing, Haiku also drafts a friendly follow-up. If the application is complete, we fan out in parallel to the **GitHub REST API** (profile + 30 most recent owned repos) and the **portfolio URL** (fetch + `html-to-text`). All three signals go to **Opus 4.7**, which scores the candidate across a 5-dimension weighted rubric (defined in [`src/lib/rubric.ts`](src/lib/rubric.ts)) and returns JSON with per-dimension scores + reasoning, a decision, strengths, concerns, and next steps. Haiku then drafts the reply email; Gmail sends it in-thread; we label the message `evaluator/evaluated` so it won't be re-processed. **State lives in Gmail labels** — no database.
+**Inbound email** lives in Gmail. An external cron (cron-job.org, free, 1-min) triggers `POST /api/cron/poll` with a bearer token; the endpoint queries Gmail for recent inbox mail not already in a terminal state (`-label:evaluator/evaluated -label:evaluator/spam-filtered -label:evaluator/skipped`) and processes up to `MAX_PER_TICK` (default 3) messages per invocation under a 55-second function budget. **Per-message KV dedup** (`processed:msg:<id>`) prevents re-processing across polls. Each message is pulled *with full thread context* (so a candidate replying to our "please send your GitHub" email is evaluated against the original application plus the reply). Before any LLM call, three filter layers run: RFC bulk-mail headers (`List-Unsubscribe` / `Precedence: bulk`), sender heuristics (`noreply@`, `mailer-daemon@`), and recruiter-outreach detection. Then **thread-aware sender dedup** skips the message ONLY if it's a brand-new thread from a sender we replied to in the last 24h — candidates continuing a conversation we started bypass dedup via the `engaged:thread:<id>` KV key. **Parsing** is a single Haiku 4.5 call that takes the email body plus the PDF attachment (Claude's native document support — no `pdf-parse`) and returns structured JSON. A pre-Opus check routes scanned/non-English/empty extractions to `needs_info` rather than letting Opus auto-fail on emptiness. If required fields are missing, Haiku drafts a friendly follow-up. If the application is complete, we fan out in parallel to the **GitHub REST API** (profile + 30 most recent owned repos) and the **portfolio URL** (fetch + `html-to-text`). All three signals go to **Opus 4.7**, which picks one of three decisions — `pass`, `fail`, or `needs_more_info` — across a 5-dimension weighted rubric (defined in [`src/lib/rubric.ts`](src/lib/rubric.ts)). Opus's qualitative call is authoritative; the weighted total is recomputed for display only. Haiku then drafts the reply email; Gmail sends it in-thread; we label the message `evaluator/evaluated` (or `needs-info`), mark the thread engaged in KV, and store the result for the dashboard. **State lives in Gmail labels + Upstash Redis** — labels for human-visible audit, KV for per-message and per-thread dedup.
 
 ```
  ┌──────────┐    ┌───────────────────┐    ┌────────────┐
@@ -165,6 +167,77 @@ Defined in [`src/lib/rubric.ts`](src/lib/rubric.ts). Pass threshold: **6.5 / 10*
 
 Edit `src/lib/rubric.ts` to re-weight, change anchors, or add/remove dimensions — the evaluator prompt is built from this file, so changes propagate automatically.
 
+## Test pack results
+
+The Plum Builders test pack (`/plum_test_pack/test_pack/`) is 22 `.eml` fixtures across four buckets — strong / weak / borderline / edge cases — graded by a Python checker against per-fixture expected decisions.
+
+```
+Plum Builders test pack — results
+
+fixture                                          expected                     actual         mentions   verdict
+strong_01_senior_fullstack                       pass                         pass           ok         PASS
+strong_02_mid_strong_project                     pass                         pass           ok         PASS
+strong_03_nontraditional                         pass                         pass           ok         PASS
+strong_04_junior_exceptional                     pass                         pass           ok         PASS
+weak_01_buzzwords_no_ship                        fail                         fail           ok         PASS
+weak_02_forks_only                               fail                         fail           ok         PASS
+weak_03_ai_generated_tells                       fail                         fail           ok         PASS
+weak_04_screenshot_portfolio                     fail                         fail           ok         PASS
+borderline_01_resume_strong_github_dead          pass_or_needs_info           needs_info     ok         PASS
+borderline_02_github_strong_no_portfolio         pass                         pass           ok         PASS
+borderline_03_private_repos_only                 pass_or_needs_info           needs_info     ok         PASS
+edge_01_no_attachment                            needs_info                   needs_info     ok         PASS
+edge_02_docx_not_pdf                             needs_info                   needs_info     ok         PASS
+edge_03_scanned_pdf                              needs_info_or_pass           pass           ok         PASS
+edge_04_no_github                                needs_info_or_pass_or_fail   fail           ok         PASS
+edge_05_broken_portfolio                         needs_info_or_pass           needs_info     ok         PASS
+edge_06_404_github                               needs_info                   needs_info     ok         PASS
+edge_07_multiple_pdfs                            pass_or_fail_or_needs_info   needs_info     ok         PASS
+edge_08_gibberish                                skipped                      skipped        ok         PASS
+edge_09_non_english                              pass_or_needs_info           needs_info     ok         PASS
+edge_10_empty_body                               needs_info                   needs_info     ok         PASS
+edge_11a_duplicate_first                         pass                         pass           ok         PASS
+edge_11b_duplicate_second                        skipped                      skipped        ok         PASS  [MUST]
+edge_12_reply_to_needs_info                      pass_or_fail                 pass           ok         PASS
+edge_13_marketing_email                          skipped                      skipped        ok         PASS  [MUST]
+edge_14_recruiter_outreach                       skipped                      skipped        ok         PASS
+
+Summary: pass 26/26  fail 0/26
+```
+
+Both `MUST`-tagged fixtures (the `Message-ID` duplicate trap and the `List-Unsubscribe` marketing trap) pass — those are the failure modes the brief explicitly tests for.
+
+### How the test pack runs
+
+The Python runner reads each `.eml` and calls a handler over a localhost HTTP bridge:
+
+```bash
+# Terminal 1 — bridge to the TS pipeline (no Gmail / no KV writes)
+cd candidate-evaluator-claude
+npm run test:server
+
+# Terminal 2 — runs the full suite
+cd plum_test_pack/test_pack
+python runner.py --handler handler_my_agent:process_message --out results.json
+python checker.py results.json
+```
+
+The bridge ([`scripts/test-handler-server.ts`](scripts/test-handler-server.ts)) exposes the same pipeline as the production cron via `dryRun()` in [`src/lib/dry-run.ts`](src/lib/dry-run.ts), but skips the Gmail send and KV write side-effects. Same model calls, same prompts, same decision tree.
+
+### What I learned from the test pack
+
+The first run scored 18 / 26. Five categories of bug surfaced:
+
+| Failure | Root cause | Fix |
+|---|---|---|
+| Junior with one strong product → `fail` | Weighted total override forced fail when Opus's qualitative read was pass | Trust Opus's decision; recompute total for display only |
+| NDA / private-repo candidates → `fail` | Evaluator only had pass/fail; no way to ask for code samples | Added `needs_more_info` decision + matching email template |
+| Recruiter outreach → `needs_info` reply sent | Layer 1b sender heuristic missed individual addresses from staffing agencies | Layer 1c — `looksLikeRecruiterOutreach` (sender hint AND outreach phrasing) |
+| Strong open-source candidate w/o portfolio site → `needs_info` | Completeness gate required all three of resume / GitHub / portfolio | Made portfolio optional when GitHub is provided |
+| Scanned PDF / Mandarin resume → `fail` | Haiku extracted near-zero content, Opus auto-failed on emptiness | Pre-Opus check: if extraction is sparse OR original text is non-Latin, ask for a parseable / English version |
+
+Running the pack against the agent itself — and watching it auto-reject candidates the test pack expected to pass — surfaced more product bugs in 30 minutes than I'd have caught from staring at the code. Recommended workflow before any submission.
+
 ## Email is an open channel — layered filtering
 
 Email isn't a form submission. The inbox receives marketing, recruiter outreach, vendor pitches, transactional mail, MAILER-DAEMON bounces, auto-replies, and bulk newsletters constantly. Treating every inbound as a potential application is how an agent ends up emailing Apollo and Streak asking for their resume — which my first live test actually did. The fix is layered filtering, cheapest checks first:
@@ -174,11 +247,38 @@ Email isn't a form submission. The inbox receives marketing, recruiter outreach,
 | **1a — RFC bulk-mail headers** | Skip if `List-Unsubscribe`, `Precedence: bulk`, or `Auto-Submitted` is present. This alone kills ~95% of marketing. | 0 LLM calls, free |
 | **1b — Sender heuristics** | Skip if `From:` looks like `noreply@`, `mailer-daemon@`, etc. | 0 LLM calls, free |
 | **2 — `EVALUATOR_ALLOWED_TO` allowlist** *(opt-in)* | When set, only mail addressed to a specific `apply@` address is processed. Use during demos to constrain a shared inbox. | 0 LLM calls, free |
-| **3 — Sender-level dedup** | Don't reply to the same email twice within 24h (Upstash `replied:<email>` key with TTL). Protects against marketing lists that pass Layer 1 and against double-replies to a single candidate. | 1 KV read per message, free tier |
+| **3 — Thread-aware sender dedup** | Don't reply to the same email twice within 24h — UNLESS the new message is in a thread we already engaged with. A candidate replying to our "please send your GitHub" ask shows up under the same address but is the expected next step in a conversation, not a duplicate application. KV stores `engaged:thread:<threadId>` (30-day TTL) and `replied:<email>` (24h TTL); dedup applies only when the new message is in a NEW thread AND the sender was replied to recently. | 2 KV reads per message |
 | **4 — Content heuristic** | After Haiku parses, require at least one application signal (PDF, GitHub link, portfolio link, or "application/resume/candidate/etc." keyword). If none, skip silently. | 1 Haiku call (which we'd run anyway) |
 | **5 — Full pipeline** | Only now do we score with Opus and reply. | Full cost |
 
 Each layer applies a distinct Gmail label (`evaluator/spam-filtered` for layer 1, `evaluator/skipped` for layer 4, `evaluator/needs-info` for incomplete, `evaluator/evaluated` for processed) so the dashboard separates "marketing the agent correctly ignored" from "valid email that didn't look like an application." With more time I'd add a learning loop: if a human re-labels something as a real application, the heuristic gets tightened.
+
+## Conversation state — why naïve dedup is wrong
+
+The first version of dedup was "skip any sender we've replied to in the last 24h." That broke the most important user flow: a candidate replies to our "please send your GitHub" ask, sees nothing happen, and writes us off. Two changes made it work:
+
+1. **Polling query no longer excludes `evaluator/needs-info` threads.** That label covers the original message we asked about; if we excluded the entire thread, the candidate's reply would never be picked up. Per-message KV dedup (`processed:msg:<id>`, 14-day TTL) catches the actually-already-handled case instead.
+2. **Sender dedup is skipped when the new message is in a thread we engaged with.** When we send any reply, we mark `engaged:thread:<threadId>` in KV (30-day TTL). On the next inbound message, the dedup check is bypassed if `wasThreadEngaged(threadId)` returns true — the candidate is continuing a conversation we started, not making a fresh attempt.
+
+Net behaviour:
+
+```
+Marketing list emails twice from info@apollo.io
+  → 1st: Layer 1a List-Unsubscribe → spam-filtered, no reply
+  → 2nd: same Layer 1a → spam-filtered, no reply
+
+Apollo somehow misses Layer 1a, gets through, gets a reply
+  → 1st: replied, sender marked replied:info@apollo.io
+  → 2nd: NEW thread, sender dedup matches → skipped, no reply ✓
+
+Candidate sends application without GitHub link
+  → reply sent asking for GitHub, sender marked, thread marked engaged
+  → candidate replies in same thread with the link
+  → polling now sees the reply (no longer excluded by needs-info filter)
+  → wasThreadEngaged returns true → sender dedup is bypassed
+  → full thread re-parsed, evaluation runs on resume + GitHub + portfolio
+  → pass/fail email sent ✓
+```
 
 ## Edge cases — how they're handled
 
@@ -188,8 +288,9 @@ Each layer applies a distinct Gmail label (`evaluator/spam-filtered` for layer 1
 | No GitHub link | Same — asks specifically for GitHub |
 | No portfolio (or only GitHub reused) | Same — asks for a non-GitHub project link |
 | Multiple missing fields | One email that asks for all of them, acknowledging what we already received |
-| Candidate replies with missing info | Full thread is re-parsed (original message + all replies) before evaluation |
-| Reply to our pass/fail email | Ignored — thread already has `evaluated` label |
+| Candidate replies with missing info | Full thread re-parsed; thread-aware dedup detects continuation and bypasses sender-level skip |
+| Same candidate sends a brand-new thread within 24h | Sender dedup applies (different threadId) — second message is `evaluator/skipped`, no second reply |
+| Reply to our pass/fail email | Thread already has `evaluator/evaluated` label → polling query excludes the thread entirely |
 | Auto-reply / out-of-office / MAILER-DAEMON | Detected by `isAutomatedSender`; labeled `evaluator/spam-filtered`, no reply sent |
 | Marketing newsletter (Apollo, Streak, etc.) | `List-Unsubscribe` header detected; labeled `evaluator/spam-filtered`, no reply sent |
 | Same sender emails twice in 24h | Sender-level dedup in KV; second message labeled `evaluator/skipped` |
