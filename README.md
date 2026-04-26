@@ -157,6 +157,10 @@ Then send a real application to `EVALUATOR_FROM_EMAIL` and wait ~60 seconds.
 
 Defined in [`src/lib/rubric.ts`](src/lib/rubric.ts). Pass threshold: **6.5 / 10** weighted.
 
+![Product Builder Rubric — 5 dimensions, scoring anchors, weighted total, pass threshold 6.5](docs/rubric.png)
+
+The visual above is the editorial spec; the table below is the at-a-glance summary; the source of truth is [`src/lib/rubric.ts`](src/lib/rubric.ts).
+
 | Dimension | Weight | What we look for |
 |---|---|---|
 | Shipped production products | 25% | Live URLs, real users, revenue, app store listings — not tutorials |
@@ -165,7 +169,7 @@ Defined in [`src/lib/rubric.ts`](src/lib/rubric.ts). Pass threshold: **6.5 / 10*
 | Speed of execution | 15% | Shipping cadence, end-to-end ownership |
 | GitHub signal | 15% | Original repos (not forks), stars, meaningful READMEs |
 
-Edit `src/lib/rubric.ts` to re-weight, change anchors, or add/remove dimensions — the evaluator prompt is built from this file, so changes propagate automatically.
+Edit `src/lib/rubric.ts` to re-weight, change anchors, or add/remove dimensions — the evaluator prompt is built from this file, so changes propagate automatically. Each anchor in the visual maps directly to the `anchors` field of the corresponding dimension in code, and Opus is shown the full anchor descriptions in its prompt.
 
 ## Test pack results
 
