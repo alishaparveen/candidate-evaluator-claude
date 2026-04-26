@@ -125,6 +125,61 @@ export function isLikelyApplication(extracted: ExtractedApplication, app: Candid
   return false;
 }
 
+/**
+ * Schema we hand to Claude as a `tool` definition. Forcing tool_use mode
+ * means the SDK returns structured arguments (a real object) instead of a
+ * text blob we have to JSON.parse — which eliminates the entire class of
+ * "LLM emitted slightly-malformed JSON" failures.
+ */
+const EXTRACTION_TOOL = {
+  name: 'submit_extraction',
+  description: 'Submit the structured candidate data extracted from the email + resume.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      candidateName: {
+        type: ['string', 'null'],
+        description: "Full name from resume or email signature, or null if not found.",
+      },
+      githubUrl: {
+        type: ['string', 'null'],
+        description: 'GitHub profile URL (https://github.com/<user>), or null if not provided.',
+      },
+      portfolioUrl: {
+        type: ['string', 'null'],
+        description: "Personal site / live product / project demo URL. NOT github.com, NOT a job board. Null if not provided.",
+      },
+      yearsExperience: {
+        type: ['number', 'null'],
+        description: 'Best estimate of years of professional experience, or null if unclear.',
+      },
+      skills: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Technical skills / technologies mentioned in the resume.',
+      },
+      resumeHighlights: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '3-7 concise bullet strings of key achievements from the resume.',
+      },
+      rawResumeText: {
+        type: ['string', 'null'],
+        description: "Full plain-text content of the resume, or null if no resume provided.",
+      },
+    },
+    required: [
+      'candidateName',
+      'githubUrl',
+      'portfolioUrl',
+      'yearsExperience',
+      'skills',
+      'resumeHighlights',
+      'rawResumeText',
+    ],
+  },
+} as const;
+
 export async function extractApplication(app: CandidateApplication): Promise<ExtractedApplication> {
   const claude = getClaude();
   const pdfAttachments = app.attachments.filter((a) => a.mimeType === 'application/pdf');
@@ -154,12 +209,26 @@ ${pdfAttachments.length ? `## Resume PDFs follow as attachments.` : '## No PDF a
 
   const res = await claude.messages.create({
     model: MODELS.parser,
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: PARSER_PROMPT,
+    tools: [EXTRACTION_TOOL as unknown as Anthropic.Tool],
+    tool_choice: { type: 'tool', name: EXTRACTION_TOOL.name },
     messages: [{ role: 'user', content }],
   });
 
-  const parsed = parseJsonFromText<any>(extractText(res.content));
+  // tool_use is forced via tool_choice, so the response will contain a
+  // tool_use block. Fall through to text-JSON parsing only if Claude
+  // somehow refuses (over-aggressive guardrails) — unlikely but covered.
+  const toolUseBlock = res.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === EXTRACTION_TOOL.name,
+  );
+  let parsed: any;
+  if (toolUseBlock) {
+    parsed = toolUseBlock.input;
+  } else {
+    parsed = parseJsonFromText<any>(extractText(res.content));
+  }
+
   const githubUsername = parsed.githubUrl ? extractGithubUsername(parsed.githubUrl) : null;
   const hasResume =
     pdfAttachments.length > 0 ||
@@ -261,6 +330,65 @@ export function findMissingFields(e: ExtractedApplication): MissingField[] {
   return missing;
 }
 
+/**
+ * Tool definition for the Opus evaluator. Same rationale as EXTRACTION_TOOL —
+ * tool_use mode means the SDK returns structured arguments, eliminating
+ * malformed-JSON failures on Opus's longer / more verbose outputs.
+ */
+const SCORE_BLOCK_SCHEMA = {
+  type: 'object',
+  properties: {
+    score: { type: 'integer', minimum: 0, maximum: 10 },
+    reasoning: { type: 'string', description: '2-3 sentences citing specific evidence.' },
+  },
+  required: ['score', 'reasoning'],
+} as const;
+
+const EVALUATION_TOOL = {
+  name: 'submit_evaluation',
+  description: "Submit the candidate's evaluation against the 5-dimension rubric.",
+  input_schema: {
+    type: 'object',
+    properties: {
+      scores: {
+        type: 'object',
+        properties: {
+          shipped_products: SCORE_BLOCK_SCHEMA,
+          technical_depth: SCORE_BLOCK_SCHEMA,
+          business_thinking: SCORE_BLOCK_SCHEMA,
+          speed_execution: SCORE_BLOCK_SCHEMA,
+          github_signal: SCORE_BLOCK_SCHEMA,
+        },
+        required: [
+          'shipped_products',
+          'technical_depth',
+          'business_thinking',
+          'speed_execution',
+          'github_signal',
+        ],
+      },
+      weightedTotal: { type: 'number', minimum: 0, maximum: 10 },
+      decision: { type: 'string', enum: ['pass', 'fail', 'needs_more_info'] },
+      summary: { type: 'string', description: '3-5 sentence overall assessment.' },
+      strengths: { type: 'array', items: { type: 'string' } },
+      concerns: { type: 'array', items: { type: 'string' } },
+      suggestedNextSteps: {
+        type: ['string', 'null'],
+        description: 'Only set when decision is pass.',
+      },
+      reasonForRejection: {
+        type: ['string', 'null'],
+        description: 'Only set when decision is fail.',
+      },
+      evidenceRequest: {
+        type: ['string', 'null'],
+        description: 'Only set when decision is needs_more_info.',
+      },
+    },
+    required: ['scores', 'weightedTotal', 'decision', 'summary', 'strengths', 'concerns'],
+  },
+} as const;
+
 export async function gatherSignals(e: ExtractedApplication): Promise<{
   github: GitHubSignal | null;
   portfolio: PortfolioSignal | null;
@@ -310,6 +438,8 @@ export async function evaluate(
     model: MODELS.evaluator,
     max_tokens: 4096,
     system: buildEvaluatorPrompt(),
+    tools: [EVALUATION_TOOL as unknown as Anthropic.Tool],
+    tool_choice: { type: 'tool', name: EVALUATION_TOOL.name },
     messages: [
       {
         role: 'user',
@@ -318,7 +448,12 @@ export async function evaluate(
     ],
   });
 
-  const parsed = parseJsonFromText<Evaluation>(extractText(res.content));
+  const toolUseBlock = res.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === EVALUATION_TOOL.name,
+  );
+  const parsed: Evaluation = toolUseBlock
+    ? (toolUseBlock.input as Evaluation)
+    : parseJsonFromText<Evaluation>(extractText(res.content));
 
   // Recompute weighted total for display only — Opus's decision is now
   // authoritative. Scoring is intentionally conservative (a junior with one
@@ -345,6 +480,31 @@ export async function evaluate(
 
   if (!Array.isArray(parsed.strengths)) parsed.strengths = [];
   if (!Array.isArray(parsed.concerns)) parsed.concerns = [];
+
+  // Post-Opus override: if Opus said FAIL on an essentially-EMPTY
+  // application AND the candidate gave us URLs that didn't fetch, prefer
+  // needs_more_info. The candidate may have typoed the link or had
+  // transient downtime — the polite move is to ask rather than auto-reject.
+  //
+  // Tight criteria so we DON'T override for genuine fails like
+  // weak_02_forks_only (which has tutorial highlights, just no real
+  // shipped work) or weak_04_screenshot_portfolio (which has 4+ resume
+  // highlights describing tutorial projects). Only fires when the resume
+  // is so thin we genuinely couldn't have evaluated it on its own.
+  if (parsed.decision === 'fail') {
+    const failedProvided: MissingField[] = [];
+    if (extracted.githubUsername && !github) failedProvided.push('github');
+    if (extracted.portfolioUrl && !portfolio) failedProvided.push('portfolio');
+    const veryThinResume =
+      (extracted.resumeHighlights || []).length < 3 &&
+      (extracted.rawResumeText || '').trim().length < 250;
+    if (failedProvided.length > 0 && veryThinResume) {
+      parsed.decision = 'needs_more_info';
+      parsed.evidenceRequest =
+        parsed.evidenceRequest ||
+        `the ${failedProvided.join(' and ')} link${failedProvided.length > 1 ? 's' : ''} you sent didn't resolve — could you double-check and resend?`;
+    }
+  }
 
   return parsed;
 }

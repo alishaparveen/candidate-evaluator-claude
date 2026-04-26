@@ -12,7 +12,8 @@
     "test:poll": "tsx --env-file=.env scripts/test-poll.ts",
     "backfill": "tsx --env-file=.env scripts/backfill-kv.ts",
     "test:server": "tsx --env-file=.env scripts/test-handler-server.ts",
-    "test:populate": "tsx --env-file=.env scripts/populate-kv-from-tests.ts"
+    "test:populate": "tsx --env-file=.env scripts/populate-kv-from-tests.ts",
+    "reprocess-errors": "tsx --env-file=.env scripts/reprocess-errors.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -20,6 +21,7 @@
     "dotenv": "^17.4.2",
     "googleapis": "^144.0.0",
     "html-to-text": "^9.0.5",
+    "jsonrepair": "^3.14.0",
     "next": "^16.2.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
