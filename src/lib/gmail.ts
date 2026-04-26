@@ -71,17 +71,47 @@ export async function listPendingMessageIds(limit = 10): Promise<string[]> {
 }
 
 export async function fetchMessageIdHeader(messageId: string): Promise<string> {
+  const t = await fetchThreadingHeaders(messageId);
+  return t.messageId;
+}
+
+/**
+ * Returns the RFC 5322 threading headers for a message: its Message-ID and
+ * its References chain. Used to build a proper In-Reply-To + References on
+ * our outbound reply so the candidate's email client (Outlook, Apple Mail,
+ * Thunderbird, anything stricter than Gmail) groups the reply under the
+ * candidate's original thread instead of treating it as a new email.
+ */
+export async function fetchThreadingHeaders(
+  messageId: string,
+): Promise<{ messageId: string; references: string }> {
   const gmail = getGmailClient();
   const res = await gmail.users.messages.get({
     userId: 'me',
     id: messageId,
     format: 'metadata',
-    metadataHeaders: ['Message-ID', 'Message-Id'],
+    metadataHeaders: ['Message-ID', 'Message-Id', 'References'],
   });
   const hdr = res.data.payload?.headers || [];
-  return (
-    hdr.find((h) => (h.name || '').toLowerCase() === 'message-id')?.value || ''
-  );
+  const get = (name: string) =>
+    hdr.find((h) => (h.name || '').toLowerCase() === name.toLowerCase())?.value || '';
+  return {
+    messageId: ensureBracketed(get('message-id')),
+    references: get('references').trim(),
+  };
+}
+
+/**
+ * Wrap a Message-ID in angle brackets if missing. RFC 5322 requires the
+ * In-Reply-To and References values to use `<id@domain>` form; some senders
+ * omit the brackets in the header and stricter clients drop the threading.
+ */
+function ensureBracketed(id: string): string {
+  if (!id) return '';
+  const trimmed = id.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('<') && trimmed.endsWith('>')) return trimmed;
+  return `<${trimmed.replace(/^<+|>+$/g, '')}>`;
 }
 
 /**
@@ -191,7 +221,10 @@ export async function sendReply(params: {
   originalSubject: string;
   subject?: string;
   body: string;
+  /** Message-ID of the message we're replying to (the candidate's last message). */
   inReplyTo?: string;
+  /** References header from the message we're replying to, if any. */
+  parentReferences?: string;
 }): Promise<void> {
   const gmail = getGmailClient();
   const fromEmail = process.env.EVALUATOR_FROM_EMAIL;
@@ -202,12 +235,22 @@ export async function sendReply(params: {
   const subject = rawSubject.toLowerCase().startsWith('re:') ? rawSubject : `Re: ${rawSubject}`;
   const toHeader = params.toName ? `"${sanitizeQuoted(params.toName)}" <${params.to}>` : params.to;
 
+  // Build the References chain: parent References + parent Message-ID.
+  // RFC 5322 §3.6.4: References should contain the Message-ID of the parent
+  // PLUS the parent's References (in order). Strict clients (Outlook, Apple
+  // Mail, Thunderbird) need this to thread our reply under the candidate's
+  // original email — Gmail's own threading is forgiving but the candidate
+  // probably isn't on Gmail.
+  const parentMid = params.inReplyTo ? params.inReplyTo.trim() : '';
+  const parentRefs = (params.parentReferences || '').trim();
+  const referencesChain = [parentRefs, parentMid].filter(Boolean).join(' ').trim();
+
   const lines = [
     `From: "${sanitizeQuoted(fromName)}" <${fromEmail}>`,
     `To: ${toHeader}`,
     `Subject: ${subject}`,
-    params.inReplyTo ? `In-Reply-To: ${params.inReplyTo}` : '',
-    params.inReplyTo ? `References: ${params.inReplyTo}` : '',
+    parentMid ? `In-Reply-To: ${parentMid}` : '',
+    referencesChain ? `References: ${referencesChain}` : '',
     'MIME-Version: 1.0',
     'Content-Type: text/plain; charset="UTF-8"',
     '',

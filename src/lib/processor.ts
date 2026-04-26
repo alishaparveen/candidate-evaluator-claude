@@ -1,6 +1,6 @@
 import {
   fetchApplicationFromMessage,
-  fetchMessageIdHeader,
+  fetchThreadingHeaders,
   labelMessage,
   markReadOnly,
   sendReply,
@@ -123,7 +123,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     looksLikePoorExtraction(extracted, hadPdf) ||
     looksNonEnglishOriginal(extracted.rawResumeText, app.body, app.subject)
   ) {
-    const msgIdHeaderEarly = await fetchMessageIdHeader(messageId).catch(() => '');
+    const threadingEarly = await fetchThreadingHeaders(messageId).catch(() => ({ messageId: '', references: '' }));
     const askMissing: MissingField[] = ['resume'];
     const { subject, body } = await writeEmail({
       kind: 'missing_info',
@@ -142,7 +142,8 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
       originalSubject: app.subject,
       subject,
       body,
-      inReplyTo: msgIdHeaderEarly,
+      inReplyTo: threadingEarly.messageId,
+      parentReferences: threadingEarly.references,
     });
     await labelMessage(messageId, 'needs-info', true);
     await markRepliedToSender(app.from).catch(() => {});
@@ -158,7 +159,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
   }
 
   const missing = findMissingFields(extracted);
-  const msgIdHeader = await fetchMessageIdHeader(messageId).catch(() => '');
+  const threading = await fetchThreadingHeaders(messageId).catch(() => ({ messageId: '', references: '' }));
 
   if (missing.length > 0) {
     const { subject, body } = await writeEmail({
@@ -178,7 +179,8 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
       originalSubject: app.subject,
       subject,
       body,
-      inReplyTo: msgIdHeader,
+      inReplyTo: threading.messageId,
+      parentReferences: threading.references,
     });
     await labelMessage(messageId, 'needs-info', true);
     await markRepliedToSender(app.from).catch(() => {});
@@ -213,7 +215,8 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     originalSubject: app.subject,
     subject,
     body,
-    inReplyTo: msgIdHeader,
+    inReplyTo: threading.messageId,
+    parentReferences: threading.references,
   });
   // needs_more_info is functionally a follow-up ask, so it gets the
   // needs-info label and the candidate is allowed to reply.
