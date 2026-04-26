@@ -29,6 +29,7 @@ export default async function DashboardInbox({ searchParams }: Props) {
   }
 
   const [evals, stats] = await Promise.all([getRecentEvaluations(50), getStats()]);
+  const inboxEmail = process.env.EVALUATOR_FROM_EMAIL || '';
 
   return (
     <main style={S.main}>
@@ -78,7 +79,7 @@ export default async function DashboardInbox({ searchParams }: Props) {
           </thead>
           <tbody>
             {evals.map((e) => (
-              <Row key={e.messageId} e={e} />
+              <Row key={e.messageId} e={e} inboxEmail={inboxEmail} />
             ))}
           </tbody>
         </table>
@@ -98,7 +99,7 @@ export default async function DashboardInbox({ searchParams }: Props) {
   );
 }
 
-function Row({ e }: { e: StoredEvaluation }) {
+function Row({ e, inboxEmail }: { e: StoredEvaluation; inboxEmail: string }) {
   const action = e.action;
   const actionStyle = {
     ...S.badge,
@@ -162,9 +163,14 @@ function Row({ e }: { e: StoredEvaluation }) {
       <td style={S.td}>
         <a
           style={S.link}
-          href={`https://mail.google.com/mail/u/0/#inbox/${e.threadId}`}
+          href={
+            inboxEmail
+              ? `https://mail.google.com/mail/?authuser=${encodeURIComponent(inboxEmail)}#inbox/${e.threadId}`
+              : `https://mail.google.com/mail/u/0/#inbox/${e.threadId}`
+          }
           target='_blank'
           rel='noopener noreferrer'
+          title={`Open thread in ${inboxEmail || 'Gmail'}`}
         >
           open ↗
         </a>
