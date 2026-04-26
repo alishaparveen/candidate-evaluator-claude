@@ -1,0 +1,455 @@
+[
+  {
+    "fixture_id": "strong_01_senior_fullstack",
+    "folder": "01_strong",
+    "from": "Priya Menon <priya.menon.dev@gmail.com>",
+    "subject": "Application \u2014 Founder's Office role",
+    "result": {
+      "decision": "pass",
+      "reasoning": "Priya is a strong builder profile: staff engineer at Razorpay with measurable scale impact, founding engineer at an acquired startup, and maintainer of a Postgres CDC tool with credible OSS traction. Resume is specific with named products, named employers, and concrete metrics \u2014 exactly what we want. GitHub and portfolio fetches failed, but the resume alone is strong enough for a clean pass. Background spans fintech and consumer infra at scale with relevant systems skills.\nNext step: 30-min call to walk through the UPI Lite rollout architecture and littlebird's CDC design; verify GitHub link live during the call.\nStrengths: 8M MAU scale ownership at Razorpay (UPI Lite) | Founding engineer at Klub.app through acquisition | littlebird OSS with 4.2k stars and ~30 production users\nConcerns: Could not independently verify GitHub or portfolio \u2014 claims rest entirely on resume | littlebird star count and tinyhost WAU should be verified live | No public artifacts reviewed firsthand in this evaluation\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Priya,\n\nWe're excited about your application. Your work scaling UPI Lite to 8M MAU at Razorpay and your experience as a founding engineer through an acquisition at Klub.app show exactly the kind of hands-on builder we're looking for. We're also impressed by littlebird \u2014 a Postgres CDC tool with real production adoption is a strong signal of both technical depth and the ability to maintain work that others depend on.\n\nLet's move forward with a conversation. We'd like to do a 30-minute call to walk through the architecture decisions you made on UPI Lite's rollout and discuss littlebird's CDC design. This will help us understand your approach to systems at scale.\n\nAre you available in the next week or two? Reply with your availability and we'll send over a calendar invite.\n\n\u2014 Hiring Team",
+      "weighted_total": 8.1,
+      "scores": {
+        "shipped_products": 9,
+        "technical_depth": 8,
+        "business_thinking": 8,
+        "speed_execution": 8,
+        "github_signal": 7
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "strong_02_mid_strong_project",
+    "folder": "01_strong",
+    "from": "Arjun Krishnan <arjun.k.builds@gmail.com>",
+    "subject": "Builder Residency application",
+    "result": {
+      "decision": "pass",
+      "reasoning": "Strong builder profile: shipped a GA feature at Linear with deep ownership, did meaningful systems work at Atlassian, and built a profitable side project (askterm.dev) with real traction. Resume is specific with concrete metrics (4-month GA, 70% perf improvement, 2.1k stars, 150 paying users at $4/mo) \u2014 the kind of detail that's hard to fake. GitHub and portfolio fetches failed but the resume stands strongly on its own. Clear pass.\nNext step: 30-min call covering the Linear Asks routing engine design tradeoffs and askterm.dev's path from launch to first paying users.\nStrengths: Product Engineer at Linear with end-to-end ownership of Linear Asks shipped to GA | askterm.dev: 2.1k GitHub stars and ~150 paying users \u2014 shipped solo and monetized | Concrete systems-level impact at Atlassian (graph-based scheduler, 70% perf gain)\nConcerns: Could not verify GitHub profile or portfolio directly \u2014 claims rest on resume alone | Limited visibility into market/growth thinking beyond pricing of the side project\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Arjun,\n\nWe were really impressed by your application. Your track record of shipping end-to-end\u2014from Linear Asks making it to GA, to askterm.dev hitting 2.1k stars and 150 paying users solo\u2014shows the kind of concrete, sustained execution we're looking for. The systems work at Atlassian (that 70% scheduler improvement) adds another dimension showing you can dig into hard technical problems.\n\nWe'd like to move forward with a conversation. We're particularly curious about the routing engine design tradeoffs you made on Linear Asks and how you thought about monetization and product-market fit on askterm.dev from launch.\n\nAre you free for a 30-minute call in the next week or so? Let us know what works for your calendar.\n\n\u2014 Hiring Team",
+      "weighted_total": 7.5,
+      "scores": {
+        "shipped_products": 8,
+        "technical_depth": 8,
+        "business_thinking": 7,
+        "speed_execution": 8,
+        "github_signal": 6
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "strong_03_nontraditional",
+    "folder": "01_strong",
+    "from": "Devika Shah <devika.builds@protonmail.com>",
+    "subject": "Application \u2014 self-taught builder",
+    "result": {
+      "decision": "pass",
+      "reasoning": "Devika is a clear builder: solo-founded two revenue-generating Indian SaaS products (ledgerlite at ~\u20b92.4L MRR with 800 paying users, kiranabot routing \u20b94L GMV/month) and maintains a popular async Razorpay library with 12k monthly PyPI downloads. The resume is specific, metric-driven, and demonstrates founder-level thinking about niche Indian markets. GitHub and portfolio links failed to load, but the resume's specificity and the externally-verifiable OSS metrics (stars, PyPI downloads, YourStory feature) make this a confident pass. Self-taught with bootcamp background but the shipping track record more than compensates.\nNext step: 30-min call to walk through ledgerlite architecture and the technical decisions behind razorpay-py-async; verify metrics live during the call.\nStrengths: Two live products with real paying customers and concrete revenue/GMV metrics | OSS library with external validation (380 stars, 12k monthly PyPI downloads) | Solo full-stack execution across Python, Next.js, Postgres, Redis, AWS\nConcerns: Could not directly verify GitHub profile or portfolio (devika.cafe) \u2014 claims are self-reported and should be spot-checked | No team/scale leadership experience visible; strengths are solo-founder shaped\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Devika,\n\nWe're excited to move forward with you. Your track record speaks for itself\u2014building two revenue-generating products with real customers and maintaining a library that's downloaded 12k times monthly shows you know how to ship things people actually use. The specificity of your metrics (\u20b92.4L MRR on ledgerlite, the GMV on kiranabot) also tells us you think like a founder, not just an engineer.\n\nWe'd love to have a 30-minute call to dig into the ledgerlite architecture and the technical decisions that shaped razorpay-py-async. We can verify some of those metrics live and get a better sense of how you approach building.\n\nLet us know what times work for you in the coming week.\n\n\u2014 Hiring Team",
+      "weighted_total": 7.6,
+      "scores": {
+        "shipped_products": 8,
+        "technical_depth": 7,
+        "business_thinking": 8,
+        "speed_execution": 8,
+        "github_signal": 7
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "strong_04_junior_exceptional",
+    "folder": "01_strong",
+    "from": "Rahul Iyer <rahul.iyer.2024@gmail.com>",
+    "subject": "Application: Plum Builder Residency",
+    "result": {
+      "decision": "pass",
+      "reasoning": "Rahul is a fresh-grad builder with an unusually strong shipping record: a solo product at 4,200 WAU with paying users and a Product Hunt #3 finish, plus a real internship at Atlan with a return offer. The resume itself is concrete, metric-laden, and credible \u2014 exactly the profile of a builder. GitHub and portfolio were unreachable, which drags the GitHub Signal score, but the resume stands on its own. Junior in years but clearly ships.\nNext step: 30-min call to walk through studybuddy.live's architecture (real-time sync, scaling to 4k WAU) and the Atlan lineage diff viewer; ask for a working GitHub link or a code sample during the call.\nStrengths: studybuddy.live: 4,200 WAU across 38 colleges, ~\u20b935k/mo revenue, Product Hunt #3 \u2014 real users, real revenue | Atlan internship with 14 merged PRs and a return offer (credible employer, concrete output) | Solo-built a real-time collaborative app with WebSockets/Postgres \u2014 non-trivial technical surface\nConcerns: GitHub profile unavailable \u2014 cannot directly verify code quality or breadth of work | Portfolio site (rahuliyer.xyz) unreachable in this evaluation | Zero years of full-time experience; depth beyond studybuddy.live is unproven\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Rahul,\n\nGreat news \u2014 we'd like to move forward with you.\n\nYour application stands out for exactly what we're looking for: you've built StudyBuddy to 4,200 weekly active users across 38 colleges with real revenue, and that Product Hunt #3 finish proves people actually want what you made. On top of that, your internship at Atlan with 14 merged PRs and a return offer shows you can ship in a real team environment too.\n\nWe'd love to dig into how you've thought about scaling StudyBuddy's real-time architecture and hear more about the work you did on the lineage diff viewer at Atlan. Let's set up a 30-minute call \u2014 during that, feel free to share a working GitHub link or a code sample if you have one handy.\n\nLooking forward to talking soon.\n\n\u2014 Hiring Team",
+      "weighted_total": 6.15,
+      "scores": {
+        "shipped_products": 7,
+        "technical_depth": 6,
+        "business_thinking": 7,
+        "speed_execution": 7,
+        "github_signal": 3
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "weak_01_buzzwords_no_ship",
+    "folder": "02_weak",
+    "from": "Vikram Sharma <vikram.sharma.dev@gmail.com>",
+    "subject": "Job Application",
+    "result": {
+      "decision": "fail",
+      "reasoning": "This application has no concrete evidence of building or shipping anything. The resume is a textbook example of buzzword inflation: 30+ skills across every paradigm and cloud, two employers described in pure boilerplate ('worked on multiple projects', 'collaborated with cross-functional teams'), and zero named products, features, metrics, or outcomes. The portfolio is a JS-only React shell with no extractable content, and GitHub is unavailable. Across all five dimensions there is essentially no signal that this candidate is a builder.\nReason for rejection: We couldn't find evidence that you've shipped real products to real users. To be competitive, your resume would need to name specific products you built, the scale they reached (users, revenue, traffic), and the concrete technical decisions you owned. A working portfolio or public GitHub with original repos would also significantly help. As-is, the application reads as a list of technologies rather than a record of building.\nStrengths: Five years of continuous employment at named companies | Completed engineering degree\nConcerns: Resume lists 11 programming languages and 3 cloud providers \u2014 implausibly broad, suggests breadth-over-depth | No specific products, features, or metrics in 5 years of work history | No GitHub presence accessible\nGitHub: unavailable\nPortfolio: \"React Portfolio\" (47 chars)",
+      "response_email": "Hi Vikram,\n\nThanks for applying\u2014we appreciated seeing your experience across so many languages and platforms. We're looking for engineers with a track record of shipping real products to users, and we didn't find enough specifics in your resume to evaluate that. It would help to know about particular products you've built, how many users or what revenue they drove, and which technical decisions you owned end-to-end. A GitHub profile or portfolio with working examples would also make a real difference.\n\nIf you're able to put together those details, we'd be happy to take another look. Best of luck with your search.\n\n\u2014 Hiring Team",
+      "weighted_total": 1.25,
+      "scores": {
+        "shipped_products": 1,
+        "technical_depth": 2,
+        "business_thinking": 1,
+        "speed_execution": 2,
+        "github_signal": 0
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "weak_02_forks_only",
+    "folder": "02_weak",
+    "from": "Sneha Patel <sneha.patel.mern@gmail.com>",
+    "subject": "Applying for the role",
+    "result": {
+      "decision": "fail",
+      "reasoning": "Sneha is an early-career trainee who has completed MERN stack training and built standard curriculum projects (e-commerce clone, todo app, weather app). There is no evidence of shipped products with real users, no accessible GitHub to demonstrate original engineering, and the portfolio site failed to render content. Additionally, the resume name (Sneha Patel) and portfolio title (Sneha Naik) don't match, which is a concern. The application does not meet the bar for a builder who has shipped real products.\nReason for rejection: The application shows only training-tier projects (e-commerce clone, todo app, weather API wrapper) with no evidence of shipping real products to real users. To be competitive, you'd need at least one product deployed live with actual users, a working GitHub profile demonstrating original (non-tutorial) engineering, and a clear articulation of the problem your work solves. We'd encourage reapplying after building and shipping one original product end-to-end.\nStrengths: Has completed structured MERN stack training and is actively learning | Familiar with a coherent web stack (MongoDB, Express, React, Node.js)\nConcerns: All projects are tutorial/training exercises with no production deployment or users | GitHub profile not found or inaccessible \u2014 no way to verify original engineering | Portfolio site renders blank, no extractable content\nGitHub: unavailable\nPortfolio: \"Sneha Naik- Full Stack Web Developer\" (47 chars)",
+      "response_email": "Hi Sneha,\n\nThanks so much for applying. We reviewed your background carefully and appreciated seeing the structured learning you've done with projects like your e-commerce clone and weather API wrapper.\n\nThe main gap for us is that we need to see at least one product you've shipped to real users in a production environment. Right now your portfolio shows training-tier projects, and we couldn't access a working GitHub profile or portfolio site to see your original engineering work in action. That shipping experience\u2014seeing how your code performs with actual users, handling real edge cases, iterating based on feedback\u2014is what helps us gauge how you'd approach problems here.\n\nWe'd genuinely encourage you to build and deploy one end-to-end product over the next few months, then reapply. That kind of shipping experience makes a huge difference.\n\nAll the best with your next project.\n\n\u2014 Hiring Team",
+      "weighted_total": 1.25,
+      "scores": {
+        "shipped_products": 1,
+        "technical_depth": 2,
+        "business_thinking": 1,
+        "speed_execution": 2,
+        "github_signal": 0
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "weak_03_ai_generated_tells",
+    "folder": "02_weak",
+    "from": "Amit Verma <amit.verma.architect@gmail.com>",
+    "subject": "Senior Software Architect \u2014 Application",
+    "result": {
+      "decision": "fail",
+      "reasoning": "This application is a textbook example of a buzzword-heavy enterprise architect resume with no verifiable shipped products, no named employers, no GitHub presence, and no portfolio. Every achievement is a percentage improvement on an internal metric, with no product, customer, or technical specifics. The pattern of suspiciously precise but unverifiable metrics (47%, 35%, 28%, 42%, $2.3M, 25+ engineers, 3 patents) combined with confidential employers and zero public technical footprint is a strong negative signal. Even allowing for NDAs at enterprise jobs, a 10-year senior architect with zero public code, writing, or named work product is not a fit for a builder-focused company.\nReason for rejection: We're looking for builders with verifiable shipped products and technical depth visible through code, live products, or named work. This application contains no named employers, no shipped products, no public code, and no portfolio \u2014 only generic enterprise-architect language and unverifiable percentage improvements. To be reconsidered, we'd need to see specific products you built (with links or named employers), a public code sample or GitHub profile, and concrete technical detail on systems you've designed beyond 'microservices' and 'cloud-native'.\nStrengths: 10 years of claimed enterprise experience and mentorship | Comfortable speaking in business-impact terms (cost, velocity, CSAT)\nConcerns: Zero named products, employers, or verifiable shipped work | No GitHub profile accessible \u2014 no public code or technical artifacts at all | No portfolio reachable\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Amit,\n\nThanks for applying. We appreciated your interest and the time you spent on your application.\n\nWe're looking for builders with verifiable shipped products and code we can point to\u2014either through a portfolio, GitHub profile, or named employers and projects. Your application uses strong architectural language, but we don't have visibility into specific products you've built, the code behind them, or concrete technical work we can evaluate beyond the r\u00e9sum\u00e9.\n\nIf you'd like to reapply in the future, linking to a GitHub profile, a live product you shipped, or naming specific employers and projects would give us a much clearer picture of your technical depth.\n\nBest of luck with your next role.\n\n\u2014 Hiring Team",
+      "weighted_total": 2.15,
+      "scores": {
+        "shipped_products": 2,
+        "technical_depth": 3,
+        "business_thinking": 3,
+        "speed_execution": 2,
+        "github_signal": 0
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "weak_04_screenshot_portfolio",
+    "folder": "02_weak",
+    "from": "Neha Gupta <neha.designs@gmail.com>",
+    "subject": "Frontend Developer \u2014 Application",
+    "result": {
+      "decision": "fail",
+      "reasoning": "Neha appears to be an early-career freelance frontend/WordPress designer rather than a product builder. The resume lists no specific clients, products, URLs, or metrics; the portfolio link rendered no content; and there is no GitHub signal. The skill set (HTML/CSS/JS/Figma/WordPress) and described work skew toward design and templated sites, not shipping engineered products to scale. Across all rubric dimensions, evidence is thin or absent.\nReason for rejection: We're looking for builders who have shipped real engineered products to real users with verifiable evidence. The resume lists freelance work without specific client names, live URLs, or user metrics; the portfolio did not load; and there is no GitHub to demonstrate technical depth. To be competitive, we'd want to see at least 2\u20133 live, linkable products with named clients or users, plus a public GitHub showing original, non-trivial code beyond WordPress/HTML/CSS templating.\nStrengths: Two years of self-directed freelance work since graduation shows initiative | Has client-facing experience working with small businesses\nConcerns: No named clients, live URLs, or user/revenue metrics on the resume | Portfolio link is a Notion page that returned no content; described as 'screenshots of designs' rather than live products | GitHub profile unavailable \u2014 no code samples or open-source signal of any kind\nGitHub: unavailable\nPortfolio: \"Notion\" (90 chars)",
+      "response_email": "Hi Neha,\n\nThanks so much for applying. We reviewed your resume and portfolio carefully, and we appreciate you taking the time to submit your work.\n\nWe're specifically looking for builders with a track record of shipping real products to actual users\u2014ideally with live links, named clients, or measurable user/revenue metrics we can see firsthand. Your resume mentions freelance projects, but without specific client names, working URLs, or usage data, it's hard for us to evaluate the scope and impact of what you've built. We'd also love to see a GitHub profile or code samples that show the technical depth behind your work.\n\nIf you do have live products you've shipped or a GitHub with your original code, we'd be happy to take another look.\n\nBest of luck with your next steps.\n\n\u2014 Hiring Team",
+      "weighted_total": 2.3,
+      "scores": {
+        "shipped_products": 3,
+        "technical_depth": 2,
+        "business_thinking": 3,
+        "speed_execution": 3,
+        "github_signal": 0
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "borderline_01_resume_strong_github_dead",
+    "folder": "03_borderline",
+    "from": "Karan Malhotra <karan.m.eng@gmail.com>",
+    "subject": "Application \u2014 returning IC",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "Karan presents as a credible senior engineer / former EM with 9 years at Flipkart and Myntra, concrete shipped products (seller payments auto-disbursement, recommendation pipeline with measured lift), and strong domain depth in distributed systems and payments. However, public signal is essentially zero: GitHub is unavailable and the portfolio link is an unrelated dormant Substack. Resume is borderline-strong but unverifiable, and the candidate is transitioning from EM back to IC, which raises a fair question about current hands-on coding sharpness. A single code artifact or a verifiable GitHub handle would flip this to a clear pass.\nEvidence requested: Please share a working GitHub handle (or 1\u20132 code samples / a take-home you've done recently) plus a confirmation that the Karan Mavai Substack is yours, so we can verify hands-on coding and the portfolio link.\nStrengths: 0\u21921 ownership of seller payments auto-disbursement product at Flipkart | Quantified impact at Myntra: +6.2% conversion from recommendation pipeline, validated via A/B testing | Strong distributed systems stack (Spark, Kafka, Postgres) applied in payments and recsys at marketplace scale\nConcerns: GitHub profile not found or private \u2014 no public code to verify technical depth | Linked portfolio is a dormant Substack under a different name (Karan Mavai vs Karan Malhotra) \u2014 possible mismatch worth clarifying | Coming off 4 years in management; hands-on IC sharpness is unverified\nGitHub: unavailable\nPortfolio: \"Karan\u2019s Newsletter | Substack\" (317 chars)",
+      "response_email": "Hi Karan,\n\nYour background stands out\u2014nine years at Flipkart and Myntra with concrete shipped work like the seller payments auto-disbursement system and the recommendation pipeline with measured lift shows real depth in distributed systems and payments domain. We can see why you're making the move back to IC.\n\nTo move forward, we'd like to see a working GitHub handle or a couple of recent code samples so we can get a sense of your current hands-on coding. Also, a quick confirmation that the Karan Mavai Substack is yours would help us verify the portfolio link.\n\nHappy to evaluate further once we have those.\n\n\u2014 Hiring Team",
+      "weighted_total": 5.55,
+      "scores": {
+        "shipped_products": 7,
+        "technical_depth": 6,
+        "business_thinking": 7,
+        "speed_execution": 5,
+        "github_signal": 1
+      },
+      "filter_layer": "evaluator-needs-more-info"
+    }
+  },
+  {
+    "fixture_id": "borderline_02_github_strong_no_portfolio",
+    "folder": "03_borderline",
+    "from": "Aisha Khan <aishak.dev@gmail.com>",
+    "subject": "Builder Residency",
+    "result": {
+      "decision": "pass",
+      "reasoning": "Aisha is a backend engineer with three years at Postman working on the Flows runtime, plus credible open-source Postgres tooling (pgmate at 520 stars, pg-shadow at 180 stars). The technical profile is strong: Go/Rust/Postgres/distributed systems with real OSS traction in a niche that requires depth. Business/product thinking is not surfaced in the resume, which is the main gap. GitHub and portfolio links failed to load, but the resume is specific enough (named employer, named repos with star counts, named product surface) to stand on its own.\nNext step: 30-min technical call on the Postman Flows runtime architecture and the design tradeoffs in pgmate; verify GitHub repos live during the call.\nStrengths: Three years shipping at Postman on the Flows runtime \u2014 non-trivial systems work at a known company | pgmate (520 stars) demonstrates real OSS traction and Postgres depth | Stack (Go, Rust, Postgres, distributed systems) aligns with serious backend infrastructure work\nConcerns: No business/product framing in resume \u2014 purely technical narrative | Could not verify GitHub profile or repo claims directly (fetch failed) | Contribution scope at Postman is described vaguely ('parts of the runtime') \u2014 unclear how much was led vs assisted\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Aisha,\n\nWe've reviewed your application and we'd like to move forward. Your three years shipping the Flows runtime at Postman shows real systems work at scale, and pgmate (with 520 stars) demonstrates both OSS traction and the kind of Postgres depth we're looking for. Your stack\u2014Go, Rust, Postgres, distributed systems\u2014is exactly the foundation we need.\n\nWe'd like to set up a 30-minute technical call to dig into the Postman Flows architecture and walk through some of the design tradeoffs you made in pgmate. We can also verify those GitHub repos are live and accessible on the call.\n\nDoes next week work for you? Let us know a few times that suit your schedule.\n\n\u2014 Hiring Team",
+      "weighted_total": 6.8,
+      "scores": {
+        "shipped_products": 7,
+        "technical_depth": 8,
+        "business_thinking": 4,
+        "speed_execution": 7,
+        "github_signal": 8
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "borderline_03_private_repos_only",
+    "folder": "03_borderline",
+    "from": "Rohan Desai <rohan.builds@fastmail.com>",
+    "subject": "Application \u2014 independent contractor",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "Rohan presents as an independent contractor with three credible-sounding engagements (Series-B fintech KYC, YC W22 logistics monolith migration, health-tech scheduling service) and relevant backend/infra skills. The catch: all client work is anonymized under NDA, the public GitHub shows only stale C# student projects, and the portfolio URL is unreachable. The resume itself is borderline \u2014 specific metrics and engagement scopes suggest a real builder, but nothing is independently verifiable. This is the canonical case where NDA-driven private work plus one concrete artifact would flip the call.\nEvidence requested: Please share either (a) one redacted/sanitized architecture write-up or code sample from a recent client engagement, or (b) a reference contact at one of the three named engagements we can speak with for 15 minutes.\nStrengths: Concrete, metric-bearing engagement descriptions (60% queue reduction, 4-month migration timeline) | Relevant modern backend/infra stack: Go, Kafka, Terraform, Postgres, AWS | Independent contractor track record implies clients re-hire and refer\nConcerns: All clients anonymized \u2014 none of the three engagements can be verified | Public GitHub (3 C# game projects from 2015-2016, 0 stars) shows zero evidence of claimed Python/Go/Kafka/Terraform skills | Portfolio URL unreachable, removing the one channel that could substantiate NDA'd work\nGitHub: 3 public repos, top langs: C#\nPortfolio: unavailable",
+      "response_email": "Hi Rohan,\n\nThanks for sending over your application. Your background stands out \u2014 the scope and specificity of your three client engagements (the Series-B fintech KYC work, the YC logistics migration, the health-tech scheduling platform) and your clear infrastructure chops suggest you've built real things in production environments.\n\nThe challenge is that everything meaningful is under NDA, and we don't have an independent way to verify the work yet. To move forward, it would help to see either a redacted or sanitized architecture write-up/code sample from one of those recent engagements, or a brief reference contact at one of the three companies we could speak with for 15 minutes.\n\nHappy to evaluate further once we have that.\n\n\u2014 Hiring Team",
+      "weighted_total": 5.25,
+      "scores": {
+        "shipped_products": 6,
+        "technical_depth": 6,
+        "business_thinking": 6,
+        "speed_execution": 6,
+        "github_signal": 1
+      },
+      "filter_layer": "evaluator-needs-more-info"
+    }
+  },
+  {
+    "fixture_id": "edge_01_no_attachment",
+    "folder": "04_edge_cases",
+    "from": "Maya Iyengar <maya.builds@gmail.com>",
+    "subject": "Application",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "resume content was too thin to evaluate (likely scanned PDF, OCR miss, or unreadable format). Asking for a text-extractable PDF.",
+      "response_email": "Hi Maya,\n\nThanks so much for sharing your GitHub and portfolio links\u2014we've had a chance to look them over and appreciate what we see. To move forward with your application, we'd need a resume (PDF works great) so we can review your full background and experience all in one place.\n\nCould you reply with that attached? Once we have it, we'll be able to take next steps.\n\n\u2014 Hiring Team",
+      "missing": [
+        "resume"
+      ],
+      "filter_layer": "poor-extraction"
+    }
+  },
+  {
+    "fixture_id": "edge_02_docx_not_pdf",
+    "folder": "04_edge_cases",
+    "from": "Karthik Pillai <karthik.p@gmail.com>",
+    "subject": "Resume for Builder Residency",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "resume content was too thin to evaluate (likely scanned PDF, OCR miss, or unreadable format). Asking for a text-extractable PDF.",
+      "response_email": "Hi Karthik,\n\nThanks for sharing your GitHub and portfolio links \u2014 we've had a chance to look them over and appreciate the work you've shown us.\n\nTo move forward, we'd like to see your resume as well. A PDF attachment works great. Once we have that, we'll have everything we need to make a decision.\n\nFeel free to reply to this email with it whenever you get a chance.\n\n\u2014 Hiring Team",
+      "missing": [
+        "resume"
+      ],
+      "filter_layer": "poor-extraction"
+    }
+  },
+  {
+    "fixture_id": "edge_03_scanned_pdf",
+    "folder": "04_edge_cases",
+    "from": "Anita Ramakrishnan <anita.r.eng@gmail.com>",
+    "subject": "Senior Engineer \u2014 Application",
+    "result": {
+      "decision": "pass",
+      "reasoning": "Anita is a credible senior engineer from a strong school (IIT Madras) with six years of experience and a concrete shipped product at meaningful scale (payments platform, 2M users). The resume names specific employers and outcomes consistent with a builder profile. GitHub and portfolio were unavailable, but the resume alone supports a pass \u2014 large-company senior engineers often have minimal public surface due to proprietary work. The weakness is light public/portfolio signal and limited articulation of business thinking, but the shipped-product evidence is strong enough.\nNext step: 30-min call to dig into the payments platform \u2014 specifically her individual scope, key technical decisions, and how she thought about reliability/correctness tradeoffs.\nStrengths: Shipped a payments platform at 2M-user scale \u2014 concrete, high-stakes production work | Led a microservices migration, indicating systems-level ownership | Strong technical foundation (IIT Madras, Go/Python/K8s/Postgres stack)\nConcerns: No public GitHub or portfolio signal to corroborate technical depth firsthand | Resume bullets are terse and don't articulate user/business reasoning beyond raw scale | Cannot verify individual contribution vs. team contribution on the payments platform\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Anita,\n\nThank you for applying. We're impressed by your background, particularly your work shipping the payments platform at 2M-user scale\u2014that's the kind of high-stakes, concrete production experience we value. Your role leading the microservices migration also shows the systems-level ownership we're looking for, and your technical stack (Go, Python, Kubernetes, Postgres) aligns well with what we're building.\n\nWe'd like to move forward with a conversation. Our next step is a 30-minute call where we can dig into the payments platform work in detail\u2014your individual scope, the key technical decisions you made, and how you approached reliability and correctness tradeoffs.\n\nIf that sounds good, please let us know your availability and we'll get something on the calendar.\n\n\u2014 Hiring Team",
+      "weighted_total": 5.7,
+      "scores": {
+        "shipped_products": 7,
+        "technical_depth": 7,
+        "business_thinking": 5,
+        "speed_execution": 6,
+        "github_signal": 2
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "edge_04_no_github",
+    "folder": "04_edge_cases",
+    "from": "Tanvi Joshi <tanvi.j.dev@gmail.com>",
+    "subject": "Application",
+    "result": {
+      "decision": "fail",
+      "reasoning": "The resume is essentially two bullet points with no specific company names, products, metrics, or scope. The portfolio at tanvi.dev belongs to a different person entirely (Tanvi Nadkarni, a TPM with a different career history), which is a significant red flag \u2014 either a mis-linked portfolio or identity confusion. GitHub data is unavailable. There is no credible evidence of shipped products, technical depth, or business thinking attributable to this candidate.\nReason for rejection: The application provides almost no verifiable evidence of being a builder: the resume is two generic lines with no company or product names, the linked portfolio appears to belong to a different person, and GitHub is unavailable. To reconsider, we'd need a resume with specific employers, product names, user/revenue metrics, and a working GitHub or code sample that is clearly the candidate's own work.\nStrengths: Claims experience at a startup with a shipped B2B dashboard (unverifiable but indicates some production work)\nConcerns: Resume is extraordinarily thin \u2014 no employer names, no product names, no metrics, no dates | Portfolio URL points to a different person (Tanvi Nadkarni, not Tanvi Joshi) \u2014 possible mis-attribution or fabrication | GitHub profile unavailable, so no independent technical signal\nGitHub: unavailable\nPortfolio: \"Tanvi Nadkarni\" (2314 chars)",
+      "response_email": "Hi Tanvi,\n\nThanks for applying. We reviewed your submission carefully, but we're not able to move forward at this stage.\n\nThe main issue is that we couldn't verify your work history or see concrete examples of what you've built. Your resume doesn't include specific company names, products, or measurable outcomes, and the portfolio link appears to point to a different person. Without a verifiable GitHub, code samples, or a working portfolio that's clearly your own, we don't have enough signal to evaluate your technical background fairly.\n\nIf you'd like to reapply in the future, a resume with specific employers and projects, along with a working GitHub or code samples, would give us what we need to properly assess your fit.\n\nBest of luck with your search.\n\n\u2014 Hiring Team",
+      "weighted_total": 1.95,
+      "scores": {
+        "shipped_products": 3,
+        "technical_depth": 2,
+        "business_thinking": 2,
+        "speed_execution": 2,
+        "github_signal": 0
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "edge_05_broken_portfolio",
+    "folder": "04_edge_cases",
+    "from": "Karthik Rao <karthik.r.dev@gmail.com>",
+    "subject": "Builder Residency Application",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "resume content was too thin to evaluate (likely scanned PDF, OCR miss, or unreadable format). Asking for a text-extractable PDF.",
+      "response_email": "Hi Karthik,\n\nThanks for applying and sharing your GitHub link\u2014we've had a chance to look it over. To move forward with your application, we just need one more thing: could you send over your resume as a PDF attachment?\n\nOnce we have that, we'll be able to complete our review and get back to you.\n\nLooking forward to hearing from you.\n\n\u2014 Hiring Team",
+      "missing": [
+        "resume"
+      ],
+      "filter_layer": "poor-extraction"
+    }
+  },
+  {
+    "fixture_id": "edge_06_404_github",
+    "folder": "04_edge_cases",
+    "from": "Sanjay Iyer <sanjay.i.fe@gmail.com>",
+    "subject": "Application",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "resume content was too thin to evaluate (likely scanned PDF, OCR miss, or unreadable format). Asking for a text-extractable PDF.",
+      "response_email": "Hi Sanjay,\n\nThanks for getting your GitHub and portfolio links over to us\u2014those gave us a solid sense of your work. To move forward with your application, we just need one more thing: a resume as a PDF attachment.\n\nOnce you send that over, we'll have everything we need to dig in properly.\n\nLooking forward to it.\n\n\u2014 Hiring Team",
+      "missing": [
+        "resume"
+      ],
+      "filter_layer": "poor-extraction"
+    }
+  },
+  {
+    "fixture_id": "edge_07_multiple_pdfs",
+    "folder": "04_edge_cases",
+    "from": "Aditi Bose <aditi.b@gmail.com>",
+    "subject": "Application \u2014 resume + cover letter",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "resume content was too thin to evaluate (likely scanned PDF, OCR miss, or unreadable format). Asking for a text-extractable PDF.",
+      "response_email": "Hi Aditi,\n\nThanks so much for applying and sharing your GitHub and portfolio links \u2014 we've had a chance to look those over and they're impressive. To move forward with your application, we just need one more thing: could you send over your resume as a PDF attachment?\n\nOnce we have that, we'll be able to complete our review and get back to you soon.\n\n\u2014 Hiring Team",
+      "missing": [
+        "resume"
+      ],
+      "filter_layer": "poor-extraction"
+    }
+  },
+  {
+    "fixture_id": "edge_08_gibberish",
+    "folder": "04_edge_cases",
+    "from": "asdf <kjsdhf@kjsdhf.com>",
+    "subject": "asdfghjkl",
+    "result": {
+      "decision": "skipped",
+      "reasoning": "no application signal (no resume / no GitHub / no portfolio / no application keywords)",
+      "response_email": "",
+      "filter_layer": "layer-4-no-signal"
+    }
+  },
+  {
+    "fixture_id": "edge_09_non_english",
+    "folder": "04_edge_cases",
+    "from": "Wei Zhang <wei.zhang.dev@gmail.com>",
+    "subject": "\u7533\u8bf7 \u2014 Builder Residency",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "resume content was too thin to evaluate (likely scanned PDF, OCR miss, or unreadable format). Asking for a text-extractable PDF.",
+      "response_email": "Hi Tanvi,\n\nThanks so much for sharing your GitHub and portfolio links\u2014we've had a chance to review them and we're interested in learning more.\n\nTo move forward, could you send over a resume as a PDF attachment? We have your portfolio and GitHub, but a resume will help us get the full picture of your background and experience.\n\nJust reply to this email with the attachment whenever you get a chance.\n\n\u2014 Hiring Team",
+      "missing": [
+        "resume"
+      ],
+      "filter_layer": "poor-extraction"
+    }
+  },
+  {
+    "fixture_id": "edge_10_empty_body",
+    "folder": "04_edge_cases",
+    "from": "Rishi Kapoor <rishi.k@gmail.com>",
+    "subject": "",
+    "result": {
+      "decision": "needs_info",
+      "reasoning": "resume content was too thin to evaluate (likely scanned PDF, OCR miss, or unreadable format). Asking for a text-extractable PDF.",
+      "response_email": "Hi Tanvi,\n\nThanks so much for your interest in the role. We have your application on file, but we're not seeing a resume attachment come through on our end. Could you send that over as a PDF when you get a chance? That'll help us move forward with reviewing your background.\n\nLooking forward to seeing it.\n\n\u2014 Hiring Team",
+      "missing": [
+        "resume"
+      ],
+      "filter_layer": "poor-extraction"
+    }
+  },
+  {
+    "fixture_id": "edge_11a_duplicate_first",
+    "folder": "04_edge_cases",
+    "from": "Priya Menon <priya.menon.dev@gmail.com>",
+    "subject": "Application \u2014 Founder's Office role",
+    "result": {
+      "decision": "pass",
+      "reasoning": "Priya is a clear builder with 8 years of compounding experience: founding engineer at an acquired fintech, staff-level work at Razorpay on a product serving 8M MAU, and a maintained OSS project (littlebird, 4.2k stars) with real production adopters. Resume is dense with specific metrics \u2014 latency, MAU, margin %, user counts \u2014 rather than buzzwords. GitHub and portfolio fetches failed but the resume stands strongly on its own with verifiable specifics. Strong pass.\nNext step: 30-min call to dig into the littlebird design decisions and the Razorpay merchant onboarding rewrite; verify github.com/priyamenon-dev/littlebird live during the call.\nStrengths: Shipped products at real scale with named employers and concrete metrics (8M MAU, 3.4% margin lift, p99 1.2s\u2192180ms) | OSS maintainer of littlebird with 4.2k stars and ~30 production users \u2014 independently verifiable signal | Founding engineer at Klub.app through acquisition \u2014 full ownership lifecycle\nConcerns: Could not verify GitHub or portfolio directly; relying on resume claims that should be spot-checked | No explicit founder/CEO experience \u2014 has been senior IC and founding engineer, not solo founder\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Priya,\n\nWe're excited to move forward with your application. Your track record of shipping at scale stands out\u2014from taking Klub through acquisition as a founding engineer to the latency improvements you drove at Razorpay (p99 down to 180ms is solid work), and your maintenance of littlebird with real production users shows sustained technical leadership beyond day jobs.\n\nWe'd like to schedule a 30-minute call to dig deeper into your design decisions on littlebird and the merchant onboarding rewrite at Razorpay. We can verify the project live during our conversation too.\n\nAre you available for a call in the next week or two? Let us know what works for your schedule and we'll send over a calendar link.\n\n\u2014 Hiring Team",
+      "weighted_total": 8.1,
+      "scores": {
+        "shipped_products": 9,
+        "technical_depth": 8,
+        "business_thinking": 8,
+        "speed_execution": 8,
+        "github_signal": 7
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "edge_11b_duplicate_second",
+    "folder": "04_edge_cases",
+    "from": "Priya Menon <priya.menon.dev@gmail.com>",
+    "subject": "Application \u2014 Founder's Office role",
+    "result": {
+      "decision": "skipped",
+      "reasoning": "duplicate Message-ID <duplicate-test-001@mail.example.com> \u2014 already processed",
+      "response_email": "",
+      "filter_layer": "message-id-dedup"
+    }
+  },
+  {
+    "fixture_id": "edge_12_reply_to_needs_info",
+    "folder": "04_edge_cases",
+    "from": "Maya Iyengar <maya.builds@gmail.com>",
+    "subject": "Re: We need a few more things to evaluate your application",
+    "result": {
+      "decision": "pass",
+      "reasoning": "Rahul is a strong junior builder profile: a 2024 VIT grad who solo-shipped studybuddy.live to 4,200 WAU across 38 colleges with ~35k/mo revenue and a Product Hunt #3 placement, plus a credible Atlan internship with 14 merged PRs and a return offer. The resume cites specific products, specific metrics, and specific employers \u2014 exactly the builder signal we want. GitHub and portfolio were unreachable, which limits independent verification, but the resume on its own is strong enough to clear the bar. One inconsistency to flag: the resume header email differs from the application email.\nNext step: 30-min call to walk through studybuddy.live architecture (WebSocket scaling, Pro tier conversion) and clarify the email mismatch; ask for a working GitHub link or one representative code sample.\nStrengths: Solo-shipped studybuddy.live to 4,200 WAU and ~35k/mo revenue as a student | Product Hunt #3 product of the day \u2014 independent external validation | Atlan internship with 14 production PRs merged and return offer\nConcerns: GitHub profile and portfolio both unreachable \u2014 no independent verification of code quality | Application email (maya.builds@gmail.com) does not match resume email (rahul.iyer.2024@gmail.com) \u2014 possible copy-paste error or identity inconsistency worth confirming | Revenue currency unspecified (\u20b935k vs $35k materially changes the business signal)\nGitHub: unavailable\nPortfolio: unavailable",
+      "response_email": "Hi Rahul,\n\nCongratulations \u2014 we'd like to move forward with your application. Your track record speaks for itself: shipping studybuddy.live to 4,200 WAU and $35k/month revenue as a student, then earning a Product Hunt #3 placement, shows real product instinct. Add the 14 production PRs you merged at Atlan and you've got the builder fundamentals we're looking for.\n\nWe'd love to hear more about studybuddy.live's architecture and how you scaled it. A 30-minute call would be great \u2014 we can dig into the technical decisions, your Pro tier conversion strategy, and how you think about product-market fit.\n\nOne quick note: we noticed your resume header email differs from your application email. Could you clarify which is current? Also, if you have a working GitHub link or a couple of representative code samples you can share, that would help us round out the picture.\n\nLooking forward to talking soon.\n\n\u2014 Hiring Team",
+      "weighted_total": 6.55,
+      "scores": {
+        "shipped_products": 8,
+        "technical_depth": 6,
+        "business_thinking": 7,
+        "speed_execution": 8,
+        "github_signal": 3
+      },
+      "filter_layer": "evaluated"
+    }
+  },
+  {
+    "fixture_id": "edge_13_marketing_email",
+    "folder": "04_edge_cases",
+    "from": "Apollo <hello@apollo.io>",
+    "subject": "Come back to Apollo. Your leads are still in there.",
+    "result": {
+      "decision": "skipped",
+      "reasoning": "bulk/marketing mail filtered: List-Unsubscribe header present (bulk mail)",
+      "response_email": "",
+      "filter_layer": "layer-1a-bulk-headers"
+    }
+  },
+  {
+    "fixture_id": "edge_14_recruiter_outreach",
+    "folder": "04_edge_cases",
+    "from": "Ritika from TalentHub <ritika@talenthub-recruiting.com>",
+    "subject": "Senior engineers available for hire \u2014 let's connect",
+    "result": {
+      "decision": "skipped",
+      "reasoning": "recruiter / agency outreach (sender + outreach phrasing)",
+      "response_email": "",
+      "filter_layer": "layer-1c-recruiter"
+    }
+  }
+]

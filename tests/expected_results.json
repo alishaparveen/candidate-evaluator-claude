@@ -1,0 +1,143 @@
+{
+  "_comment": "Expected outcomes for each fixture. 'decision' must match. 'must_mention' is a list of substrings the response/reasoning should ideally contain (case-insensitive); used as soft signal, not a hard fail. 'notes' is for the candidate, not checked.",
+  "_decision_values": [
+    "pass         — strong candidate, advance to next round",
+    "fail         — clearly weak, send respectful rejection",
+    "needs_info   — incomplete application, ask for missing pieces",
+    "skipped      — not an application (marketing, recruiter outreach, gibberish, etc.)"
+  ],
+
+  "strong_01_senior_fullstack": {
+    "decision": "pass",
+    "must_mention": ["razorpay", "shipped", "production"],
+    "notes": "Staff eng with massive shipped scope. Should be a clear pass."
+  },
+  "strong_02_mid_strong_project": {
+    "decision": "pass",
+    "must_mention": ["linear", "askterm"],
+    "notes": "Mid-level + real side product with paying users."
+  },
+  "strong_03_nontraditional": {
+    "decision": "pass",
+    "must_mention": ["ledgerlite", "kiranabot", "paying users"],
+    "notes": "No CS degree but multiple shipped products. Watch for credentialism bias."
+  },
+  "strong_04_junior_exceptional": {
+    "decision": "pass",
+    "must_mention": ["studybuddy", "weekly active"],
+    "notes": "Junior but real product traction. Should not be auto-rejected for years of experience."
+  },
+
+  "weak_01_buzzwords_no_ship": {
+    "decision": "fail",
+    "must_mention": ["specific", "shipped"],
+    "notes": "Pure buzzword resume. Rejection should specifically say 'no evidence of shipped products' or similar."
+  },
+  "weak_02_forks_only": {
+    "decision": "fail",
+    "must_mention": ["github", "tutorial"],
+    "notes": "Trainee with only forks. Rejection should call out lack of original work."
+  },
+  "weak_03_ai_generated_tells": {
+    "decision": "fail",
+    "must_mention": ["specific"],
+    "notes": "Vague metrics, AI-generated tone, all internal repos. A bonus if the agent flags the resume's tells."
+  },
+  "weak_04_screenshot_portfolio": {
+    "decision": "fail",
+    "must_mention": ["portfolio"],
+    "notes": "No real engineering signal. Rejection should be respectful and specific."
+  },
+
+  "borderline_01_resume_strong_github_dead": {
+    "decision": "pass_or_needs_info",
+    "must_mention": ["github", "private"],
+    "notes": "Acceptable answers: pass with caveat, OR ask for code samples / a call. Auto-reject would be wrong."
+  },
+  "borderline_02_github_strong_no_portfolio": {
+    "decision": "pass",
+    "must_mention": ["pgmate", "github"],
+    "notes": "Strong open-source body of work. Lack of portfolio site shouldn't be disqualifying."
+  },
+  "borderline_03_private_repos_only": {
+    "decision": "pass_or_needs_info",
+    "must_mention": ["nda", "private"],
+    "notes": "Reasonable to ask for code samples or take it on signal. Auto-reject = bad."
+  },
+
+  "edge_01_no_attachment": {
+    "decision": "needs_info",
+    "must_mention": ["resume"],
+    "notes": "Should ask for the missing resume specifically."
+  },
+  "edge_02_docx_not_pdf": {
+    "decision": "needs_info",
+    "must_mention": ["pdf"],
+    "notes": "Should ask for a PDF version. Bonus: mention why (parsing reliability)."
+  },
+  "edge_03_scanned_pdf": {
+    "decision": "needs_info_or_pass",
+    "must_mention": [],
+    "notes": "Acceptable: ask for a text-extractable PDF, OR run OCR and evaluate. Either is defensible."
+  },
+  "edge_04_no_github": {
+    "decision": "needs_info_or_pass_or_fail",
+    "must_mention": ["github"],
+    "notes": "Reasonable to ask for code samples or alternative evidence. Hard reject just for missing GitHub = bad."
+  },
+  "edge_05_broken_portfolio": {
+    "decision": "needs_info_or_pass",
+    "must_mention": ["portfolio"],
+    "notes": "Should detect the broken link and ask for a working one."
+  },
+  "edge_06_404_github": {
+    "decision": "needs_info",
+    "must_mention": ["github"],
+    "notes": "Should detect that the GitHub profile doesn't exist and ask for the correct link."
+  },
+  "edge_07_multiple_pdfs": {
+    "decision": "pass_or_fail_or_needs_info",
+    "must_mention": [],
+    "notes": "Should pick the resume (not the cover letter) or ask which is which. The fixture's 'resume' is intentionally thin so a fail is also OK if it figures out the right doc."
+  },
+  "edge_08_gibberish": {
+    "decision": "skipped",
+    "must_mention": [],
+    "notes": "Not an application. Should be silently skipped, NOT replied to."
+  },
+  "edge_09_non_english": {
+    "decision": "pass_or_needs_info",
+    "must_mention": [],
+    "notes": "Chinese-language application. Acceptable: respond in English, or detect language and respond in kind. Skipping = bad."
+  },
+  "edge_10_empty_body": {
+    "decision": "needs_info",
+    "must_mention": [],
+    "notes": "Empty subject + empty body but a PDF attached. Should ask for context (links, intent)."
+  },
+  "edge_11a_duplicate_first": {
+    "decision": "pass",
+    "must_mention": [],
+    "notes": "First send. Should evaluate normally."
+  },
+  "edge_11b_duplicate_second": {
+    "decision": "skipped",
+    "must_mention": [],
+    "notes": "Same Message-ID as 11a. MUST be deduplicated. If your agent replies twice, this is a real bug."
+  },
+  "edge_12_reply_to_needs_info": {
+    "decision": "pass_or_fail",
+    "must_mention": [],
+    "notes": "This is a reply to a previous needs-info request. Bonus: agent stitches it back to the original thread instead of treating it as a new application. If your state model is naive, this becomes 'needs_info' again because the body alone has no GitHub link."
+  },
+  "edge_13_marketing_email": {
+    "decision": "skipped",
+    "must_mention": [],
+    "notes": "Has List-Unsubscribe and Precedence: bulk headers. MUST be skipped silently. Replying to this is the failure mode shown in your screenshot."
+  },
+  "edge_14_recruiter_outreach": {
+    "decision": "skipped",
+    "must_mention": [],
+    "notes": "Recruiter selling candidates, not applying. Should be skipped or get a polite 'we're not hiring through agencies' reply — but NOT treated as a candidate."
+  }
+}

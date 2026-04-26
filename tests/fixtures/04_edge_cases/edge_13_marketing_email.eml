@@ -1,0 +1,35 @@
+From: Apollo <hello@apollo.io>
+To: apply@yourdomain.com
+Subject: Come back to Apollo. Your leads are still in there.
+Date: Wed, 05 Nov 2025 15:45:00 -0000
+Message-ID: <177714481998.45.8723185021796101056@mail.example.com>
+List-Unsubscribe:
+ <https://apollo.io/unsubscribe?u=12345>, <mailto:unsubscribe@apollo.io>
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+Precedence: bulk
+X-Mailer: SendGrid
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============7413049164008165456=="
+
+--===============7413049164008165456==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Hi there,
+
+We noticed you haven't logged in. Your leads are waiting!
+
+Click here to log back in: https://apollo.io/login
+
+Unsubscribe: https://apollo.io/unsubscribe?u=12345
+
+--===============7413049164008165456==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body><p>Marketing email with tracking pixel.</p><img src=3D"https://tr=
+ack.apollo.io/px?u=3D12345" /></body></html>
+
+--===============7413049164008165456==--

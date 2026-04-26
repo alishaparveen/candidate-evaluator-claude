@@ -164,6 +164,82 @@ export async function wasMessageProcessed(messageId: string): Promise<boolean> {
   return typeof v === 'string' && v.length > 0;
 }
 
+// ---------- Test pack records (separate namespace) ----------
+//
+// The Plum test pack runs 22 .eml fixtures through the dry-run pipeline
+// and writes the results here so the dashboard can show "what happened
+// vs what the test pack expected". Lives in a separate KV namespace
+// (`test:eval:<id>` + `tests:list`) so it doesn't pollute production
+// records, and so the dashboard can render it as its own section.
+
+export type TestVerdict = 'PASS' | 'FAIL' | 'SOFT-FAIL';
+
+export type TestResult = {
+  fixtureId: string;
+  folder: string;
+  from: string;
+  subject: string;
+  expectedDecision: string; // raw from expected_results.json (may be "pass_or_needs_info")
+  actualDecision: string; // pass / fail / needs_info / skipped / ERROR
+  verdict: TestVerdict;
+  weightedTotal?: number;
+  scores?: Record<string, number>;
+  reasoning?: string;
+  filterLayer?: string;
+  notes?: string; // expected_results.json's free-text notes for this fixture
+  recordedAt: string;
+};
+
+const TEST_LIST_KEY = 'tests:list';
+const TEST_KEY = (id: string) => `test:eval:${id}`;
+
+export async function saveTestResult(record: TestResult): Promise<void> {
+  if (!isStoreConfigured()) return;
+  const redis = getRedis();
+  await redis.set(TEST_KEY(record.fixtureId), JSON.stringify(record));
+}
+
+export async function setTestResultIndex(fixtureIds: string[]): Promise<void> {
+  if (!isStoreConfigured()) return;
+  const redis = getRedis();
+  await redis.del(TEST_LIST_KEY);
+  if (fixtureIds.length) await redis.rpush(TEST_LIST_KEY, ...fixtureIds);
+}
+
+export async function getTestResults(): Promise<TestResult[]> {
+  if (!isStoreConfigured()) return [];
+  const redis = getRedis();
+  const ids = await redis.lrange(TEST_LIST_KEY, 0, -1);
+  if (!ids.length) return [];
+  const records = await Promise.all(
+    ids.map(async (id) => {
+      const raw = await redis.get<string | TestResult>(TEST_KEY(id));
+      if (!raw) return null;
+      return typeof raw === 'string' ? (JSON.parse(raw) as TestResult) : raw;
+    }),
+  );
+  return records.filter((r): r is TestResult => r !== null);
+}
+
+export async function getTestSummary(): Promise<{
+  total: number;
+  pass: number;
+  fail: number;
+  softFail: number;
+  recordedAt: string | null;
+}> {
+  const results = await getTestResults();
+  let pass = 0, fail = 0, softFail = 0;
+  let latest: string | null = null;
+  for (const r of results) {
+    if (r.verdict === 'PASS') pass++;
+    else if (r.verdict === 'SOFT-FAIL') softFail++;
+    else fail++;
+    if (!latest || r.recordedAt > latest) latest = r.recordedAt;
+  }
+  return { total: results.length, pass, fail, softFail, recordedAt: latest };
+}
+
 export async function getStats(): Promise<{
   total: number;
   byAction: Record<StoredAction, number>;

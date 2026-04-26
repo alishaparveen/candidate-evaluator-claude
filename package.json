@@ -11,7 +11,8 @@
     "test:eval": "tsx --env-file=.env scripts/test-evaluate.ts",
     "test:poll": "tsx --env-file=.env scripts/test-poll.ts",
     "backfill": "tsx --env-file=.env scripts/backfill-kv.ts",
-    "test:server": "tsx --env-file=.env scripts/test-handler-server.ts"
+    "test:server": "tsx --env-file=.env scripts/test-handler-server.ts",
+    "test:populate": "tsx --env-file=.env scripts/populate-kv-from-tests.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
