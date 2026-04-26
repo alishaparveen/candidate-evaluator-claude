@@ -71,15 +71,19 @@ export type DimensionScore = {
   reasoning: string;
 };
 
+export type EvaluationDecision = 'pass' | 'fail' | 'needs_more_info';
+
 export type Evaluation = {
   scores: Record<string, DimensionScore>;
   weightedTotal: number;
-  decision: 'pass' | 'fail';
+  decision: EvaluationDecision;
   summary: string;
   strengths: string[];
   concerns: string[];
   suggestedNextSteps?: string;
   reasonForRejection?: string;
+  /** Only set when decision === 'needs_more_info'. What to ask the candidate for. */
+  evidenceRequest?: string;
 };
 
 export type ProcessResult =

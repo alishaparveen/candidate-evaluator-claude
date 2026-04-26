@@ -13,6 +13,9 @@ import {
   isAutomatedSender,
   isBulkOrAutomated,
   isLikelyApplication,
+  looksLikePoorExtraction,
+  looksLikeRecruiterOutreach,
+  looksNonEnglishOriginal,
   passesAllowedTo,
   writeEmail,
 } from './evaluator';
@@ -47,6 +50,16 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     return { action: 'skipped', reason: auto.reason || 'automated' };
   }
 
+  // Layer 1c — recruiter / agency outreach. They're selling candidates, not
+  // applying. Same treatment as marketing.
+  const recruiter = looksLikeRecruiterOutreach(app);
+  if (recruiter.recruiter) {
+    await markReadOnly(messageId).catch(() => {});
+    await labelMessage(messageId, 'spam-filtered', true).catch(() => {});
+    await persist(app, 'spam_filtered', null, { reason: recruiter.reason });
+    return { action: 'skipped', reason: recruiter.reason || 'recruiter outreach' };
+  }
+
   // Demo-mode allowlist: when EVALUATOR_ALLOWED_TO is set, only process mail
   // addressed to that specific address (e.g. apply@yourdomain.com).
   const toCheck = passesAllowedTo(app);
@@ -75,6 +88,48 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
       reason: 'no application signal (no resume/github/portfolio/keywords)',
     });
     return { action: 'skipped', reason: 'no application signal (no resume/github/portfolio/keywords)' };
+  }
+
+  // Pre-Opus check: if we got almost nothing out of the resume but the
+  // candidate clearly tried to apply (PDF attached, URLs provided), ask for
+  // a parseable version rather than letting Opus auto-fail on empty input.
+  // Catches scanned/image-only PDFs, OCR misses, and partial non-English
+  // extractions.
+  const hadPdf = app.attachments.some((a) => a.mimeType === 'application/pdf');
+  if (
+    looksLikePoorExtraction(extracted, hadPdf) ||
+    looksNonEnglishOriginal(extracted.rawResumeText, app.body, app.subject)
+  ) {
+    const msgIdHeaderEarly = await fetchMessageIdHeader(messageId).catch(() => '');
+    const askMissing: MissingField[] = ['resume'];
+    const { subject, body } = await writeEmail({
+      kind: 'missing_info',
+      candidateName: extracted.candidateName,
+      missing: askMissing,
+      received: {
+        resume: extracted.hasResume,
+        github: !!extracted.githubUsername,
+        portfolio: !!extracted.portfolioUrl,
+      },
+    });
+    await sendReply({
+      threadId: app.threadId,
+      to: app.from,
+      toName: app.fromName || extracted.candidateName || undefined,
+      originalSubject: app.subject,
+      subject,
+      body,
+      inReplyTo: msgIdHeaderEarly,
+    });
+    await labelMessage(messageId, 'needs-info', true);
+    await markRepliedToSender(app.from).catch(() => {});
+    await persist(app, 'requested_info', extracted.candidateName, { missing: askMissing });
+    return {
+      action: 'requested_info',
+      missing: askMissing,
+      candidateEmail: app.from,
+      candidateName: extracted.candidateName,
+    };
   }
 
   const missing = findMissingFields(extracted);
@@ -112,6 +167,11 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
   }
 
   const { github, portfolio } = await gatherSignals(extracted);
+  // We deliberately do NOT auto-route to needs_info when provided URLs fail to
+  // fetch. Strong resume with a broken portfolio link is still a pass; weak
+  // resume is still a fail. Opus has both signals and the prompt explicitly
+  // tells it to use needs_more_info when claims are credible but evidence
+  // can't be verified.
   const evaluation = await evaluate(extracted, github, portfolio);
 
   const { subject, body } = await writeEmail({
@@ -128,9 +188,20 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     body,
     inReplyTo: msgIdHeader,
   });
-  await labelMessage(messageId, 'evaluated', true);
+  // needs_more_info is functionally a follow-up ask, so it gets the
+  // needs-info label and the candidate is allowed to reply.
+  const finalLabel: 'evaluated' | 'needs-info' =
+    evaluation.decision === 'needs_more_info' ? 'needs-info' : 'evaluated';
+  await labelMessage(messageId, finalLabel, true);
   await markRepliedToSender(app.from).catch(() => {});
-  await persist(app, 'evaluated', extracted.candidateName, { evaluation });
+  if (evaluation.decision === 'needs_more_info') {
+    await persist(app, 'requested_info', extracted.candidateName, {
+      missing: [],
+      reason: evaluation.evidenceRequest || evaluation.summary,
+    });
+  } else {
+    await persist(app, 'evaluated', extracted.candidateName, { evaluation });
+  }
 
   console.log('[evaluator] decision', {
     candidate: extracted.candidateEmail,
@@ -141,6 +212,15 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
       Object.entries(evaluation.scores).map(([k, v]) => [k, v.score]),
     ),
   });
+
+  if (evaluation.decision === 'needs_more_info') {
+    return {
+      action: 'requested_info',
+      missing: [],
+      candidateEmail: app.from,
+      candidateName: extracted.candidateName,
+    };
+  }
 
   return {
     action: 'evaluated',

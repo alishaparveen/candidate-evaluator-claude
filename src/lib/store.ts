@@ -47,7 +47,7 @@ export type StoredEvaluation = {
   processedAt: string;
   action: StoredAction;
   // present if action === 'evaluated'
-  decision?: 'pass' | 'fail';
+  decision?: 'pass' | 'fail' | 'needs_more_info';
   weightedTotal?: number;
   scores?: Record<string, DimensionScore>;
   summary?: string;

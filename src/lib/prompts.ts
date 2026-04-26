@@ -33,7 +33,8 @@ Tone rules:
 
 If PASS: brief congratulation, 1–2 specific strengths from their application, and one clear next step.
 If FAIL: thank them for applying, give ONE specific, respectful reason grounded in their application (not "many strong applicants"), wish them well. Be direct but kind.
-If MISSING_INFO: warm, brief request for what's missing; acknowledge what we already received; invite them to reply with the missing pieces.`;
+If MISSING_INFO: warm, brief request for what's missing; acknowledge what we already received; invite them to reply with the missing pieces.
+If NEEDS_MORE_INFO: warm, brief acknowledgement that their application is interesting but we need one more piece of evidence before deciding. State exactly what would help (e.g. "a couple of code samples since most of your work is under NDA", or "a working portfolio link", or "a link to one of the products you mentioned in the resume"). End with a soft "happy to evaluate further once we have it."`;
 
 export function buildEvaluatorPrompt(): string {
   const rubricText = RUBRIC.dimensions
@@ -69,12 +70,13 @@ Return ONLY a JSON object (no markdown fences):
     "github_signal":    { "score": <0-10 integer>, "reasoning": "..." }
   },
   "weightedTotal": <float 0-10>,
-  "decision": "pass" | "fail",
+  "decision": "pass" | "fail" | "needs_more_info",
   "summary": "<3-5 sentence overall assessment>",
   "strengths": ["<specific strength>", "..."],
   "concerns":  ["<specific concern>",  "..."],
   "suggestedNextSteps": "<only if pass — brief next step, e.g. a 30-min call on topic X>",
-  "reasonForRejection": "<only if fail — specific, respectful reason citing what would need to improve>"
+  "reasonForRejection": "<only if fail — specific, respectful reason citing what would need to improve>",
+  "evidenceRequest":    "<only if needs_more_info — exactly what to ask the candidate for (one sentence)>"
 }
 
 Rules:
@@ -82,5 +84,33 @@ Rules:
 - Cite specific evidence. "They have a GitHub" is not reasoning. "Their repo <name> has <X> stars and demonstrates <Y>" is.
 - If evidence for a dimension is weak or missing, score it low and say so — do not pad scores with generous defaults.
 - Do NOT invent evidence. If you genuinely cannot tell, say so and score conservatively.
-- The resume, GitHub, and portfolio may contradict each other. If so, call it out as a concern.`;
+- The resume, GitHub, and portfolio may contradict each other. If so, call it out as a concern.
+
+## How to choose between pass / fail / needs_more_info
+
+Take the clearest call you can. Default to pass or fail. needs_more_info is reserved for genuinely borderline cases where one specific piece of evidence would flip the call.
+
+PASS — choose when ANY of these is true:
+- The resume names specific shipped products with credible scale (real company names, real product names, concrete metrics like user counts, revenue, or technical scope) and the candidate clearly built or led them.
+- The GitHub shows substantial original work (multiple non-fork repos with stars, traction, or non-trivial engineering).
+- The portfolio shows a real shipped product with users.
+- Weighted total >= ${RUBRIC.passThreshold}/10.
+The resume IS evidence. A strong resume alone — even with a broken URL or unavailable GitHub — is still a pass. Do not downgrade a clear builder just because we couldn't fetch their portfolio.
+
+FAIL — choose when the application is clearly weak across the board:
+- Resume is buzzword-heavy with no specific shipped products / employers / metrics.
+- GitHub is only forks, tutorials, or trivial code.
+- Portfolio is decorative (screenshots, mockups) with no real product behind it.
+- Candidate is clearly not a builder regardless of how the email is presented.
+
+NEEDS_MORE_INFO — choose ONLY when ALL three are true:
+1. The resume on its own is borderline — neither strong enough for a clean pass nor weak enough for a clean fail.
+2. There's a plausible, specific reason supporting evidence is missing (NDA / private repos, EM or PM role with proprietary work, scanned PDF that text-extraction failed on, resume in a non-English language we cannot fully read, junior candidate with one credible shipped product but limited public surface).
+3. A short concrete ask (one code sample, one working link, one English summary) would meaningfully change the call.
+
+Junior candidates: a junior with one credibly-shipped product (specific name, specific user metric) is a PASS, not needs_more_info. Don't punish for low years-of-experience.
+
+Strong resume, broken URL: PASS if the resume is strong on its own. Use needs_more_info only when the resume is borderline AND the broken URL was the missing piece.
+
+If you choose needs_more_info, weighted total is informational only — do not gate the decision on it.`;
 }

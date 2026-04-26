@@ -59,6 +59,41 @@ export function isAutomatedSender(email: string, subject: string): { skip: boole
 }
 
 /**
+ * Layer 1c — recruiter / agency outreach detection. These don't carry
+ * List-Unsubscribe headers (so Layer 1a misses them) and they're sent from
+ * legitimate-looking individual addresses (so Layer 1b misses them too),
+ * but they're NOT applications — they're sales pitches selling candidates.
+ *
+ * Conservative: requires both a recruiter-domain/signal AND outreach phrasing.
+ * Triggers on actual fixtures like "we have a pool of pre-vetted senior
+ * engineers currently looking for opportunities" but won't match a real
+ * candidate who happens to write "I'm currently looking for a role".
+ */
+export function looksLikeRecruiterOutreach(app: CandidateApplication): { recruiter: boolean; reason?: string } {
+  const fromDomain = (app.from.split('@')[1] || '').toLowerCase();
+  const text = `${app.subject}\n${app.body}`.toLowerCase();
+  const senderHints = /(recruit|staffing|talent[\s-]?(hub|acquisition|partners|solutions)|head[\s-]?hunt|placement|agency)/i;
+  const senderMatch = senderHints.test(fromDomain) || senderHints.test(text.slice(0, 800));
+  const outreachPatterns = [
+    /pool of (pre-?vetted|qualified|senior|top|skilled)/,
+    /candidates (available|looking|currently)/,
+    /(senior|top|qualified) (engineers?|developers?|talent|candidates?) (available|for hire|looking)/,
+    /pre[- ]?vetted (engineers?|developers?|candidates?)/,
+    /we (have|represent|place|source) (engineers?|developers?|candidates?|talent)/,
+    /(quick )?call to discuss (how we can|hiring|your (hiring|engineering|team|needs))/,
+    /help (you )?with (your )?(hiring|recruit|staffing|engineering hires)/,
+    /interested in (hiring|adding) (our|some|engineers|developers)/,
+    /our (bench|roster|pool) of/,
+    /open to (a )?(quick )?(call|chat|conversation) (to|about) (discuss )?(your )?hiring/,
+  ];
+  const phrasingMatch = outreachPatterns.some((rx) => rx.test(text));
+  if (senderMatch && phrasingMatch) {
+    return { recruiter: true, reason: 'recruiter / agency outreach (sender + outreach phrasing)' };
+  }
+  return { recruiter: false };
+}
+
+/**
  * Demo-mode allowlist. If EVALUATOR_ALLOWED_TO is set, only mail addressed
  * to that address (in the To: header) is processed. Useful for live demos
  * where you want to constrain the agent to a dedicated `apply@` address
@@ -145,11 +180,84 @@ ${pdfAttachments.length ? `## Resume PDFs follow as attachments.` : '## No PDF a
   };
 }
 
+/**
+ * After we've tried to fetch GitHub + portfolio, identify URLs the candidate
+ * gave us that didn't resolve. A 404 GitHub or a dead portfolio is a strong
+ * signal we should ASK rather than guess — Opus has no real evidence to
+ * score against, and auto-failing because the link is broken is unfair.
+ */
+export function findUnreachableProvidedUrls(
+  extracted: ExtractedApplication,
+  github: GitHubSignal | null,
+  portfolio: PortfolioSignal | null,
+): MissingField[] {
+  const missing: MissingField[] = [];
+  if (extracted.githubUsername && !github) missing.push('github');
+  if (extracted.portfolioUrl && !portfolio) missing.push('portfolio');
+  return missing;
+}
+
+/**
+ * If Haiku extracted almost nothing from a candidate's resume — empty or
+ * single-bullet highlights, very short raw text — but a PDF was attached or
+ * URLs were provided, the right answer is to ASK for a parseable resume,
+ * not to let Opus auto-fail on emptiness. Catches scanned/image-only PDFs,
+ * non-English resumes that partially extracted, and broken-link cases where
+ * the resume content was also too thin to stand alone.
+ */
+export function looksLikePoorExtraction(
+  extracted: ExtractedApplication,
+  hadPdf: boolean,
+): boolean {
+  const highlightCount = (extracted.resumeHighlights || []).length;
+  const rawLength = (extracted.rawResumeText || '').trim().length;
+  const skillCount = (extracted.skills || []).length;
+  // "Essentially nothing extracted": fewer than 2 highlights AND short raw
+  // text AND fewer than 3 skills. PDFs that came through Haiku as <300 chars
+  // are usually unreadable scans / OCR misses.
+  const noContent = highlightCount < 2 && rawLength < 300 && skillCount < 3;
+  if (!noContent) return false;
+  // Only treat as poor extraction when the candidate clearly TRIED to send a
+  // resume — either an attached PDF or links to inspect. Otherwise the right
+  // answer is the regular missing-fields ask.
+  return hadPdf || !!extracted.githubUrl || !!extracted.portfolioUrl;
+}
+
+/**
+ * If the resume's original text is dominantly non-Latin script (CJK, Devanagari,
+ * Cyrillic, Arabic, Hebrew, etc.), Haiku may translate snippets into English
+ * but we lose nuance and can't fully evaluate. Ask the candidate for an English
+ * version / summary instead of guessing. This is also the polite move — many
+ * non-English resumes are quite strong and a brief English summary lets us
+ * evaluate them fairly.
+ */
+export function looksNonEnglishOriginal(...sources: (string | null | undefined)[]): boolean {
+  // Check each source independently. If ANY source is dominantly non-Latin
+  // (>15%), treat as non-English. Avoids dilution when one source is in
+  // English and another is in CJK / Devanagari / Cyrillic / Arabic / Hebrew.
+  const nonLatinRanges =
+    /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\u0900-\u097f\u0400-\u04ff\u0600-\u06ff\u0590-\u05ff]/g;
+  for (const src of sources) {
+    if (!src) continue;
+    const text = src.trim();
+    if (text.length < 30) continue;
+    const nonLatinCount = (text.match(nonLatinRanges) || []).length;
+    if (nonLatinCount / text.length > 0.15) return true;
+  }
+  return false;
+}
+
 export function findMissingFields(e: ExtractedApplication): MissingField[] {
   const missing: MissingField[] = [];
   if (!e.hasResume) missing.push('resume');
-  if (!e.githubUsername) missing.push('github');
-  if (!e.portfolioUrl) missing.push('portfolio');
+  // Resume is required. For evidence of work, EITHER a GitHub profile OR a
+  // portfolio is enough — strong open-source candidates without a portfolio
+  // site shouldn't be auto-rejected, and contractors with a public portfolio
+  // but no GitHub shouldn't be either. Only flag both as missing when neither
+  // is present.
+  if (!e.githubUsername && !e.portfolioUrl) {
+    missing.push('github', 'portfolio');
+  }
   return missing;
 }
 
@@ -212,14 +320,28 @@ export async function evaluate(
 
   const parsed = parseJsonFromText<Evaluation>(extractText(res.content));
 
-  // Recompute weighted total defensively (model sometimes drifts on arithmetic).
+  // Recompute weighted total for display only — Opus's decision is now
+  // authoritative. Scoring is intentionally conservative (a junior with one
+  // strong shipped product can land at 6.0–6.5), so a strict threshold gate
+  // overrules clearly-pass reasoning. We trust Opus's qualitative call and
+  // keep the arithmetic on the side for the dashboard / logs.
   let weighted = 0;
   for (const d of RUBRIC.dimensions) {
     const s = parsed.scores?.[d.id]?.score ?? 0;
     weighted += s * d.weight;
   }
   parsed.weightedTotal = Math.round(weighted * 100) / 100;
-  parsed.decision = parsed.weightedTotal >= RUBRIC.passThreshold ? 'pass' : 'fail';
+
+  // Sanity guard: if Opus returned an unrecognized decision, fall back to the
+  // arithmetic. This handles malformed JSON / hallucinated values without
+  // erroring.
+  if (
+    parsed.decision !== 'pass' &&
+    parsed.decision !== 'fail' &&
+    parsed.decision !== 'needs_more_info'
+  ) {
+    parsed.decision = parsed.weightedTotal >= RUBRIC.passThreshold ? 'pass' : 'fail';
+  }
 
   if (!Array.isArray(parsed.strengths)) parsed.strengths = [];
   if (!Array.isArray(parsed.concerns)) parsed.concerns = [];
@@ -228,7 +350,7 @@ export async function evaluate(
 }
 
 export async function writeEmail(params: {
-  kind: 'pass' | 'fail' | 'missing_info';
+  kind: 'pass' | 'fail' | 'missing_info' | 'needs_more_info';
   candidateName: string | null;
   evaluation?: Evaluation;
   missing?: MissingField[];
@@ -281,6 +403,15 @@ Missing: ${missingList}
 Already received: ${receivedList || 'your email'}
 
 Write the email body asking for the missing pieces. Brief and friendly.`;
+  } else if (params.kind === 'needs_more_info' && params.evaluation) {
+    subject = 'A quick follow-up on your application';
+    userPrompt = `Decision: NEEDS_MORE_INFO.
+FROM_NAME: ${fromName}
+Candidate first name: ${firstName}
+What's interesting so far: ${params.evaluation.summary}
+Specific evidence we'd like before deciding: ${params.evaluation.evidenceRequest || 'a code sample or working link to one of the products you mentioned'}
+
+Write the email body. Acknowledge what you've seen, then ask for the specific evidence in one sentence. End with "happy to evaluate further once we have it." or similar warm close.`;
   } else {
     throw new Error(`writeEmail: invalid params for kind=${params.kind}`);
   }

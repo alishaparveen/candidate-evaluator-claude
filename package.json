@@ -10,7 +10,8 @@
     "get-token": "tsx --env-file=.env scripts/get-refresh-token.ts",
     "test:eval": "tsx --env-file=.env scripts/test-evaluate.ts",
     "test:poll": "tsx --env-file=.env scripts/test-poll.ts",
-    "backfill": "tsx --env-file=.env scripts/backfill-kv.ts"
+    "backfill": "tsx --env-file=.env scripts/backfill-kv.ts",
+    "test:server": "tsx --env-file=.env scripts/test-handler-server.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
