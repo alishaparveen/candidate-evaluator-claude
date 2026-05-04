@@ -29,6 +29,18 @@ const MAX_PORTFOLIO_TEXT_FOR_EVAL = 8_000;
  * replied to. Caller should label `evaluator/spam-filtered` and move on.
  */
 export function isBulkOrAutomated(app: CandidateApplication): { spam: boolean; reason?: string } {
+  // Bypass for trusted sender domains (e.g. agentmail.to test traffic that
+  // adds List-Unsubscribe for compliance even on 1:1 sends).
+  const bypass = (process.env.BULK_HEADER_BYPASS_DOMAINS || '')
+    .toLowerCase()
+    .split(',')
+    .map((d) => d.trim())
+    .filter(Boolean);
+  const senderDomain = (app.from || '').toLowerCase().split('@')[1] || '';
+  if (senderDomain && bypass.some((d) => senderDomain === d || senderDomain.endsWith(`.${d}`))) {
+    return { spam: false };
+  }
+
   if (app.listUnsubscribe) {
     return { spam: true, reason: 'List-Unsubscribe header present (bulk mail)' };
   }
