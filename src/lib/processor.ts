@@ -21,12 +21,12 @@ import {
 } from './evaluator';
 import {
   markMessageProcessed,
+  getThreadEngagement,
   markRepliedToSender,
   markThreadEngaged,
   recentlyRepliedToSender,
   saveEvaluation,
   wasMessageProcessed,
-  wasThreadEngaged,
   type StoredAction,
   type StoredEvaluation,
 } from './store';
@@ -87,12 +87,21 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     return { action: 'skipped', reason: toCheck.reason || 'not in demo allowlist' };
   }
 
-  // Sender-level dedup, but ONLY when this is a fresh thread. If the new
-  // message is in a thread we already engaged with (we previously sent a
-  // needs-info ask in the same thread), the candidate is replying to OUR
-  // ask — process it normally so we evaluate the full thread context.
-  const isContinuation = await wasThreadEngaged(app.threadId).catch(() => false);
-  if (!isContinuation) {
+  // Per-thread engagement check. Two cases:
+  //   1. Thread was engaged by a final pass/fail ('evaluated') — the
+  //      conversation is done. Refuse new messages outright (e.g. duplicate
+  //      sends, candidate replying "thanks", in-thread spam).
+  //   2. Thread was engaged by a 'needs-info' ask — we're expecting the
+  //      candidate to reply with the missing info. Bypass sender-dedup so
+  //      the reply gets evaluated against the full thread context.
+  const engagement = await getThreadEngagement(app.threadId).catch(() => null);
+  if (engagement === 'evaluated') {
+    await labelMessage(messageId, 'skipped', true).catch(() => {});
+    await persist(app, 'skipped', null, { reason: `thread already finalized (evaluated)` });
+    await markMessageProcessed(messageId).catch(() => {});
+    return { action: 'skipped', reason: `thread ${app.threadId} already finalized (prior evaluation sent)` };
+  }
+  if (engagement !== 'needs-info') {
     const lastReplied = await recentlyRepliedToSender(app.from).catch(() => null);
     if (lastReplied) {
       await labelMessage(messageId, 'skipped', true).catch(() => {});
@@ -147,7 +156,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     });
     await labelMessage(messageId, 'needs-info', true);
     await markRepliedToSender(app.from).catch(() => {});
-    await markThreadEngaged(app.threadId).catch(() => {});
+    await markThreadEngaged(app.threadId, 'needs-info').catch(() => {});
     await markMessageProcessed(messageId).catch(() => {});
     await persist(app, 'requested_info', extracted.candidateName, { missing: askMissing });
     return {
@@ -184,7 +193,7 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     });
     await labelMessage(messageId, 'needs-info', true);
     await markRepliedToSender(app.from).catch(() => {});
-    await markThreadEngaged(app.threadId).catch(() => {});
+    await markThreadEngaged(app.threadId, 'needs-info').catch(() => {});
     await markMessageProcessed(messageId).catch(() => {});
     await persist(app, 'requested_info', extracted.candidateName, { missing });
     return {
@@ -224,12 +233,15 @@ export async function processMessage(messageId: string): Promise<ProcessResult> 
     evaluation.decision === 'needs_more_info' ? 'needs-info' : 'evaluated';
   await labelMessage(messageId, finalLabel, true);
   await markRepliedToSender(app.from).catch(() => {});
-  // Engage the thread so candidate replies bypass sender dedup. Even for a
-  // final pass/fail decision we mark engagement — if the candidate replies
-  // with "thanks", we won't accidentally try to evaluate them again. The
-  // labelMessage above plus the polling-query exclusion of `evaluated`
-  // means this thread also won't appear in future polls anyway.
-  await markThreadEngaged(app.threadId).catch(() => {});
+  // Mark thread engagement with the action that engaged it. needs-info means
+  // we're expecting a candidate reply (must bypass sender dedup). evaluated /
+  // finalized means the conversation is done — any new message in this thread
+  // (duplicate sends, "thanks" replies) gets refused at the engagement check
+  // at the top of processMessage rather than triggering a second eval.
+  await markThreadEngaged(
+    app.threadId,
+    evaluation.decision === 'needs_more_info' ? 'needs-info' : 'evaluated',
+  ).catch(() => {});
   await markMessageProcessed(messageId).catch(() => {});
   if (evaluation.decision === 'needs_more_info') {
     await persist(app, 'requested_info', extracted.candidateName, {

@@ -128,17 +128,30 @@ export async function recentlyRepliedToSender(email: string): Promise<string | n
  */
 const ENGAGED_THREAD_KEY = (threadId: string) => `engaged:thread:${threadId}`;
 
-export async function markThreadEngaged(threadId: string, ttlSeconds = 30 * 86_400): Promise<void> {
+export type ThreadEngagement = 'needs-info' | 'evaluated';
+
+export async function markThreadEngaged(
+  threadId: string,
+  type: ThreadEngagement = 'needs-info',
+  ttlSeconds = 30 * 86_400,
+): Promise<void> {
   if (!isStoreConfigured()) return;
   const redis = getRedis();
-  await redis.set(ENGAGED_THREAD_KEY(threadId), new Date().toISOString(), { ex: ttlSeconds });
+  await redis.set(ENGAGED_THREAD_KEY(threadId), type, { ex: ttlSeconds });
+}
+
+export async function getThreadEngagement(threadId: string): Promise<ThreadEngagement | null> {
+  if (!isStoreConfigured()) return null;
+  const redis = getRedis();
+  const v = await redis.get<string>(ENGAGED_THREAD_KEY(threadId));
+  if (v === 'needs-info' || v === 'evaluated') return v;
+  // Backward compat: legacy keys held an ISO timestamp; treat any other
+  // non-empty value as a needs-info engagement (the original behavior).
+  return typeof v === 'string' && v.length > 0 ? 'needs-info' : null;
 }
 
 export async function wasThreadEngaged(threadId: string): Promise<boolean> {
-  if (!isStoreConfigured()) return false;
-  const redis = getRedis();
-  const v = await redis.get<string>(ENGAGED_THREAD_KEY(threadId));
-  return typeof v === 'string' && v.length > 0;
+  return (await getThreadEngagement(threadId)) !== null;
 }
 
 /**
